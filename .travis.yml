@@ -1,0 +1,48 @@
+os: linux
+dist: bionic
+language: generic
+addons:
+  apt:
+    packages:
+      - libgmp-dev
+env:
+  global:
+    - HACKAGE_USERNAME=fozworth
+    # HACKAGE_PASSWORD
+    - secure: "AuOU5OaCE6MtXutOwgFhggmXIwfp+nbh37MGhCG1D2q47t3Zp7Q4vsogRbcs5uS6HaRe2Iist8psEcuSyygouZxMiv7UO3Nl7bRiboGqJQdTBgjGIYm5GZOzzq3j+ixpPphDDI1Tz9ciUR/Ol0yF0XYrhMMqJpLKoUejsf4NyteoOmVTMAGZJAcsf6XrZaFUSGcuD2iC3/NjgKwNCXiix8SwP6QbDFL9umLh9SpzBO1n3VyZbtNBsCZYXHRnQZPcTqFFTlrWLAVvmaHDdjXpOlNDz4kY+J/cksknBttydN+pbhkA5jmhRN0D8NFXkDgN65QCEL41IbXN+NzWVTV2c6JGOJDAE55dNadFZYtBi2oQ/tIZs3kYYFG45aMk9OgQPZ1a1nNo7DVfs1Q9LDkj7BcpvsoFUP+iJwZzZAGi8v6fppvWdyo1HLxRmvXhDk9WUTsZVk2F4Dqd/IbGNxWVPRrr1ElAv1ViGRatac86ONEtYrW2f9iU7aQJFo0tZ8kCDwK9q/jhrfkbtnvJKDTtG695Z6AsKeZjF3oeB7EAVIKsqA4rK5gdOnvnvptFtXry91I0u+H6hL32YnlIEhkDitQupvTDs+1c8v69KWYCn7g2jyvD3ySmeh4YIkJbmvVgFXuBZufCExLruyfKJL7fMVhUC0ximntLyCuEl/X8qyI="
+
+cache:
+  directories:
+    - $HOME/.local/bin
+    - $HOME/.stack
+
+before_install:
+  - |
+    if ! test -f "$HOME/.local/bin/stack"
+    then
+      VERSION=2.3.0.1
+      URL="https://github.com/commercialhaskell/stack/releases/download/v$VERSION/stack-$VERSION-linux-x86_64-static.tar.gz"
+      curl --location --output stack.tar.gz "$URL"
+      gunzip stack.tar.gz
+      tar --extract --file stack.tar --strip-components 1
+      mkdir --parents "$HOME/.local/bin"
+      mv stack "$HOME/.local/bin"
+      rm stack.tar
+    fi
+  - stack --version
+
+install:
+  - stack setup
+  - stack build --only-dependencies --test
+
+script:
+  - stack build --no-run-tests --pedantic --test
+  - stack build --test
+  - stack sdist
+
+deploy:
+  provider: script
+  on:
+    tags: true
+  skip_cleanup: true
+  script: stack upload .
