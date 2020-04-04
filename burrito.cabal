@@ -27,6 +27,10 @@ license-file: LICENSE.markdown
 license: ISC
 maintainer: Taylor Fausak
 
+source-repository head
+  location: https://github.com/tfausak/burrito
+  type: git
+
 library
   build-depends:
     base >= 4.12.0 && < 4.15
