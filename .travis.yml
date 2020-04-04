@@ -45,4 +45,4 @@ deploy:
   on:
     tags: true
   skip_cleanup: true
-  script: stack upload .
+  script: yes | stack upload .
