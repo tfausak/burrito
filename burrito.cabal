@@ -1,5 +1,5 @@
 name: burrito
-version: 1.0.0.0
+version: 1.0.0.1
 
 synopsis: Parse and render URI templates.
 description:
