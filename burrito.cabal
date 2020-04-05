@@ -20,7 +20,7 @@ description:
   it should work with other schemes as well.
 
 build-type: Simple
-cabal-version: >= 1.8
+cabal-version: >= 1.10
 category: Network
 extra-source-files: README.markdown
 license-file: LICENSE.markdown
@@ -34,6 +34,7 @@ source-repository head
 library
   build-depends:
     base >= 4.12.0 && < 4.15
+  default-language: Haskell98
   exposed-modules: Burrito
   ghc-options:
     -Weverything
@@ -58,6 +59,7 @@ test-suite test
     , burrito -any
     , HUnit >= 1.6.0 && < 1.7
     , transformers >= 0.5.6 && < 0.6
+  default-language: Haskell98
   hs-source-dirs: src/test
   main-is: Main.hs
   type: exitcode-stdio-1.0

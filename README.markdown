@@ -1,8 +1,8 @@
 # Burrito
 
-[![][travis badge]][travis]
-[![][hackage badge]][hackage]
-[![][stackage badge]][stackage]
+[![Travis CI](https://travis-ci.org/tfausak/burrito.svg?branch=master)](https://travis-ci.org/tfausak/burrito)
+[![Hackage](https://img.shields.io/hackage/v/burrito)](https://hackage.haskell.org/package/burrito)
+[![Stackage](https://www.stackage.org/package/burrito/badge/nightly?label=stackage)](https://www.stackage.org/package/burrito)
 
 Burrito is a Haskell library for parsing and rendering URI templates.
 
@@ -19,10 +19,3 @@ valid IRI and its output will be a valid URI or URN.
 
 Although Burrito is primarily intended to be used with HTTP and HTTPS URIs, it
 should work with other schemes as well.
-
-[travis badge]: https://travis-ci.org/tfausak/burrito.svg?branch=master
-[travis]: https://travis-ci.org/tfausak/burrito
-[hackage badge]: https://img.shields.io/hackage/v/burrito
-[hackage]: https://hackage.haskell.org/package/burrito
-[stackage badge]: https://www.stackage.org/package/burrito/badge/nightly?label=stackage
-[stackage]: https://www.stackage.org/package/burrito
