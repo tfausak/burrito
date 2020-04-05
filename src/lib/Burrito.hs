@@ -48,6 +48,9 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Word as Word
 import qualified Text.Printf as Printf
 
+#ifdef TemplateHaskell
+import qualified Language.Haskell.TH.Syntax as TH
+#endif
 
 -- | Attempts to parse a string as a URI template. If parsing fails, this will
 -- return 'Nothing'. Otherwise it will return 'Just' the parsed template.
@@ -942,3 +945,16 @@ between
   -> a
   -> Bool
 between lo hi x = lo <= x && x <= hi
+
+#ifdef TemplateHaskell
+-- Derived Lift instance for Template Haskell
+deriving instance TH.Lift Character
+deriving instance TH.Lift Expression
+deriving instance TH.Lift Literal
+deriving instance TH.Lift Modifier
+deriving instance TH.Lift Name
+deriving instance TH.Lift Operator
+deriving instance TH.Lift Template
+deriving instance TH.Lift Token
+deriving instance TH.Lift Variable
+#endif

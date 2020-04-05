@@ -17,6 +17,10 @@ import qualified GHC.Stack as Stack
 import qualified System.Exit as Exit
 import qualified Test.HUnit as Test
 
+#ifdef TemplateHaskell
+import qualified Burrito.QQ as QQ
+#endif
+
 main :: IO ()
 main = runTests $ do
 
@@ -1123,6 +1127,15 @@ main = runTests $ do
     test "{&%aa*}" ["%aa" =: "A"] "&%aa=A"
     test "{&%aa*}" ["%aa" =: ["A", "B"]] "&%aa=A&%aa=B"
     test "{&%aa*}" ["%aa" =: ["A" =: "1", "B" =: "2"]] "&A=1&B=2"
+
+#ifdef TemplateHaskell
+  label "qq" $
+      Writer.tell
+        . Test
+        $ "expression"
+        Test.~: Just [QQ.uriTemplate|http://example.com/search{?query}|]
+        Test.~?= Burrito.parse "http://example.com/search{?query}"
+#endif
 
 runTests :: Writer.WriterT Test IO a -> IO ()
 runTests writer = do

@@ -31,11 +31,16 @@ source-repository head
   location: https://github.com/tfausak/burrito
   type: git
 
+flag TemplateHaskell
+  description: Enable template-haskell support
+  default: True
+
 library
   build-depends:
     base >= 4.12.0 && < 4.15
   default-language: Haskell98
   exposed-modules: Burrito
+  extensions: CPP
   ghc-options:
     -Weverything
     -Wno-all-missed-specialisations
@@ -53,6 +58,12 @@ library
       -Wno-missing-safe-haskell-mode
       -Wno-prepositive-qualified-module
 
+  if flag(TemplateHaskell)
+    build-depends: template-haskell >= 2.14 && < 12.16
+    exposed-modules: Burrito.QQ, Burrito.TH
+    extensions: DeriveLift, StandaloneDeriving
+    cpp-options: -DTemplateHaskell
+
 test-suite test
   build-depends:
     base -any
@@ -60,6 +71,11 @@ test-suite test
     , HUnit >= 1.6.0 && < 1.7
     , transformers >= 0.5.6 && < 0.6
   default-language: Haskell98
+  extensions: CPP
   hs-source-dirs: src/test
   main-is: Main.hs
   type: exitcode-stdio-1.0
+
+  if flag(TemplateHaskell)
+    cpp-options: -DTemplateHaskell
+    extensions: QuasiQuotes
