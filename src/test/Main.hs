@@ -1142,9 +1142,9 @@ label string = Writer.censor $ \tests -> Test $ string Test.~: tests
 
 test
   :: (Stack.HasCallStack, Monad m)
-  => String
-  -> Values
-  -> Expected
+  => String -- ^ A string to parse as a URI template ('Burrito.parse')
+  -> Values -- ^ Values to feed into the template ('Burrito.expand')
+  -> Expected -- ^ The URI that should result
   -> Writer.WriterT Test m ()
 test input values output = do
   let expand = Burrito.expand $ fmap (fmap unwrapValue) values
