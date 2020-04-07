@@ -43,12 +43,25 @@ library
     -Wno-missing-exported-signatures
     -Wno-safe
   hs-source-dirs: src/lib
+  other-modules:
+    Burrito.Expand
+    Burrito.Parse
+    Burrito.Type.Character
+    Burrito.Type.Expression
+    Burrito.Type.Literal
+    Burrito.Type.Modifier
+    Burrito.Type.Name
+    Burrito.Type.Operator
+    Burrito.Type.Template
+    Burrito.Type.Token
+    Burrito.Type.Value
+    Burrito.Type.Variable
 
-  if impl(ghc >= 8.8.1)
+  if impl(ghc >= 8.8)
     ghc-options:
       -Wno-missing-deriving-strategies
 
-  if impl(ghc >= 8.10.1)
+  if impl(ghc >= 8.10)
     ghc-options:
       -Wno-missing-safe-haskell-mode
       -Wno-prepositive-qualified-module
