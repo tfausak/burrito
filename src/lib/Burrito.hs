@@ -20,15 +20,16 @@
 -- Assuming you're familiar with URI templates, here's a simple example to show
 -- you how Burrito works:
 --
--- > import Burrito
--- > let Just template = parse "http://example.com/search{?query}"
--- > expand [ ( "query", stringValue "bikes" ) ] template
--- > "http://example.com/search?query=bikes"
+-- >>> import Burrito
+-- >>> let Just template = parse "http://example/search{?query}"
+-- >>> expand [("query", stringValue "chorizo")] template
+-- "http://example.com/search?query=chorizo"
 --
--- In short, use 'parse' to parse templates and 'expand' to render them.
+-- In short, use @parse@ to parse templates and @expand@ to render them.
 module Burrito
   ( Parse.parse
   , Expand.expand
+  , TH.uriTemplate
   , Template.Template
   , Value.Value
   , stringValue
@@ -39,6 +40,7 @@ where
 
 import qualified Burrito.Expand as Expand
 import qualified Burrito.Parse as Parse
+import qualified Burrito.TH as TH
 import qualified Burrito.Type.Template as Template
 import qualified Burrito.Type.Value as Value
 

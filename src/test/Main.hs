@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Main
@@ -1123,6 +1124,25 @@ main = runTests $ do
     test "{&%aa*}" ["%aa" =: "A"] "&%aa=A"
     test "{&%aa*}" ["%aa" =: ["A", "B"]] "&%aa=A&%aa=B"
     test "{&%aa*}" ["%aa" =: ["A" =: "1", "B" =: "2"]] "&A=1&B=2"
+
+  label "supports quasi quotes" $ do
+    label "as expressions" $ do
+      let qq x y = Writer.tell . Test $ Just x Test.~?= Burrito.parse y
+      qq [Burrito.uriTemplate||] ""
+      qq [Burrito.uriTemplate|a|] "a"
+      qq [Burrito.uriTemplate|%00|] "%00"
+      qq [Burrito.uriTemplate|{a}|] "{a}"
+      qq [Burrito.uriTemplate|{a,b}|] "{a,b}"
+      qq [Burrito.uriTemplate|{a}{b}|] "{a}{b}"
+      qq [Burrito.uriTemplate|{a*}|] "{a*}"
+      qq [Burrito.uriTemplate|{a:1}|] "{a:1}"
+      qq [Burrito.uriTemplate|{+a}|] "{+a}"
+      qq [Burrito.uriTemplate|{#a}|] "{#a}"
+      qq [Burrito.uriTemplate|{.a}|] "{.a}"
+      qq [Burrito.uriTemplate|{/a}|] "{/a}"
+      qq [Burrito.uriTemplate|{;a}|] "{;a}"
+      qq [Burrito.uriTemplate|{?a}|] "{?a}"
+      qq [Burrito.uriTemplate|{&a}|] "{&a}"
 
 runTests :: Writer.WriterT Test IO a -> IO ()
 runTests writer = do
