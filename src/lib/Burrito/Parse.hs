@@ -7,6 +7,7 @@ import qualified Burrito.Type.Expression as Expression
 import qualified Burrito.Type.Literal as Literal
 import qualified Burrito.Type.Modifier as Modifier
 import qualified Burrito.Type.Name as Name
+import qualified Burrito.Type.NonEmpty as NonEmpty
 import qualified Burrito.Type.Operator as Operator
 import qualified Burrito.Type.Template as Template
 import qualified Burrito.Type.Token as Token
@@ -14,7 +15,6 @@ import qualified Burrito.Type.Variable as Variable
 import qualified Control.Applicative as Applicative
 import qualified Control.Monad as Monad
 import qualified Data.Char as Char
-import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Maybe as Maybe
 import qualified Data.Word as Word
 
@@ -217,7 +217,7 @@ parseVarcharFirst = parseEither parseVarcharUnencoded parseVarcharEncoded
 
 -- | Parses an unencoded character in a variable name.
 parseVarcharUnencoded :: Parser (NonEmpty.NonEmpty Char)
-parseVarcharUnencoded = pure <$> parseIf isVarchar
+parseVarcharUnencoded = NonEmpty.singleton <$> parseIf isVarchar
 
 
 -- | Parses a percent-encoded character in a variable name.
@@ -248,14 +248,14 @@ isVarchar x = case x of
 -- keeping the non-emptiness around.
 combine :: NonEmpty.NonEmpty a -> [NonEmpty.NonEmpty a] -> NonEmpty.NonEmpty a
 combine xs =
-  nonEmpty (NonEmpty.head xs)
-    . mappend (NonEmpty.tail xs)
+  nonEmpty (NonEmpty.first xs)
+    . mappend (NonEmpty.rest xs)
     . concatMap NonEmpty.toList
 
 
 -- | Constructs a non-empty list without using an operator.
 nonEmpty :: a -> [a] -> NonEmpty.NonEmpty a
-nonEmpty = (NonEmpty.:|)
+nonEmpty = NonEmpty.NonEmpty
 
 
 -- | Parses a @pct-encoded@ as defined by section 1.5 of the RFC. Returns both
@@ -360,7 +360,7 @@ parseMaxLength = do
 -- | Converts a list of digits into the number that they represent. For example
 -- @[1, 2]@ becomes @12@.
 fromDigits :: NonEmpty.NonEmpty Int -> Int
-fromDigits = foldr1 ((+) . (10 *))
+fromDigits = foldr1 ((+) . (10 *)) . NonEmpty.toList
 
 
 -- | Parses up to the given number of occurrences of the given parser. If the

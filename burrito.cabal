@@ -51,6 +51,7 @@ library
     Burrito.Type.Literal
     Burrito.Type.Modifier
     Burrito.Type.Name
+    Burrito.Type.NonEmpty
     Burrito.Type.Operator
     Burrito.Type.Template
     Burrito.Type.Token

@@ -7,6 +7,7 @@ import qualified Burrito.Type.Expression as Expression
 import qualified Burrito.Type.Literal as Literal
 import qualified Burrito.Type.Modifier as Modifier
 import qualified Burrito.Type.Name as Name
+import qualified Burrito.Type.NonEmpty as NonEmpty
 import qualified Burrito.Type.Operator as Operator
 import qualified Burrito.Type.Template as Template
 import qualified Burrito.Type.Token as Token
@@ -16,7 +17,6 @@ import qualified Data.Bits as Bits
 import qualified Data.Char as Char
 import qualified Data.Functor.Identity as Identity
 import qualified Data.List as List
-import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Maybe as Maybe
 import qualified Data.Word as Word
 import qualified Text.Printf as Printf
@@ -54,7 +54,7 @@ expandToken f token = case token of
 
 -- | Expands a literal token for output according to section 3.1 of the RFC.
 expandLiteral :: Literal.Literal -> String
-expandLiteral = concatMap expandCharacter . Literal.characters
+expandLiteral = concatMap expandCharacter . NonEmpty.toList . Literal.characters
 
 
 -- | Expands a single literal character for output. This is necessary to
@@ -176,9 +176,9 @@ expandMaybeValue operator name modifier maybeValue = do
 expandValue :: Operator.Operator -> Name.Name -> Modifier.Modifier -> Value.Value -> Maybe String
 expandValue operator name modifier value = case value of
   Value.Dictionary dictionary ->
-    expandDictionary operator name modifier <$> NonEmpty.nonEmpty dictionary
+    expandDictionary operator name modifier <$> NonEmpty.fromList dictionary
   Value.List list ->
-    expandList operator name modifier <$> NonEmpty.nonEmpty list
+    expandList operator name modifier <$> NonEmpty.fromList list
   Value.String string -> Just $ expandString operator name modifier string
 
 
@@ -240,7 +240,7 @@ expandElements f operator name modifier =
       Modifier.Asterisk -> separatorFor operator
       _ -> ","
   in mappend prefix . List.intercalate separator . concatMap
-    (f operator name modifier)
+    (f operator name modifier) . NonEmpty.toList
 
 
 -- | Expands a string value for output.

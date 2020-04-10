@@ -2,7 +2,7 @@ module Burrito.Type.Name
   ( Name(..)
   ) where
 
-import qualified Data.List.NonEmpty as NonEmpty
+import qualified Burrito.Type.NonEmpty as NonEmpty
 
 
 -- | Represents a variable name, which is required to be non-empty. Variable

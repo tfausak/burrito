@@ -3,7 +3,7 @@ module Burrito.Type.Literal
   ) where
 
 import qualified Burrito.Type.Character as Character
-import qualified Data.List.NonEmpty as NonEmpty
+import qualified Burrito.Type.NonEmpty as NonEmpty
 
 
 -- | Represents a literal in a token.
