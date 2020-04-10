@@ -1,9 +1,13 @@
+{-# LANGUAGE DeriveLift #-}
+
 module Burrito.Type.NonEmpty
   ( NonEmpty(..)
   , fromList
   , singleton
   , toList
   ) where
+
+import qualified Language.Haskell.TH.Syntax as TH
 
 
 -- | This simple type is used as a replacement for
@@ -12,7 +16,7 @@ module Burrito.Type.NonEmpty
 data NonEmpty a = NonEmpty
   { first :: a
   , rest :: [a]
-  } deriving (Eq, Show)
+  } deriving (Eq, TH.Lift, Show)
 
 
 -- | Attempts to convert a regular list into a non-empty list.

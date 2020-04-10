@@ -1,8 +1,11 @@
+{-# LANGUAGE DeriveLift #-}
+
 module Burrito.Type.Character
   ( Character(..)
   ) where
 
 import qualified Data.Word as Word
+import qualified Language.Haskell.TH.Syntax as TH
 
 
 -- | Represents a character in a literal. Although encoded characters are
@@ -11,4 +14,4 @@ import qualified Data.Word as Word
 data Character
   = Encoded Word.Word8
   | Unencoded Char
-  deriving (Eq, Show)
+  deriving (Eq, TH.Lift, Show)

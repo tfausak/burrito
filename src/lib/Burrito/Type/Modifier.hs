@@ -1,6 +1,10 @@
+{-# LANGUAGE DeriveLift #-}
+
 module Burrito.Type.Modifier
   ( Modifier(..)
   ) where
+
+import qualified Language.Haskell.TH.Syntax as TH
 
 
 -- | Represents a modifier on a variable. The number associated with a prefix
@@ -9,4 +13,4 @@ data Modifier
   = Asterisk
   | Colon Int
   | None
-  deriving (Eq, Show)
+  deriving (Eq, TH.Lift, Show)
