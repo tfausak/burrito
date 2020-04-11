@@ -219,7 +219,7 @@ parseVarcharFirst = parseEither parseVarcharUnencoded parseVarcharEncoded
 
 -- | Parses an unencoded character in a variable name.
 parseVarcharUnencoded :: Parser (NonEmpty.NonEmpty Char)
-parseVarcharUnencoded = NonEmpty.singleton <$> parseIf isVarchar
+parseVarcharUnencoded = NonEmpty.singleton <$> parseIf Name.isVarchar
 
 
 -- | Parses a percent-encoded character in a variable name.
@@ -235,15 +235,6 @@ parseVarcharRest :: Parser (NonEmpty.NonEmpty Char)
 parseVarcharRest = parseEither
   (nonEmpty <$> parseChar '.' <*> fmap NonEmpty.toList parseVarcharFirst)
   parseVarcharFirst
-
-
--- | Returns true if the given character is in the @varchar@ range defined by
--- section 2.3 of the RFC. Note that this does not include the @pct-encoded@
--- part of the grammar because that requires multiple characters to match.
-isVarchar :: Char -> Bool
-isVarchar x = case x of
-  '_' -> True
-  _ -> isAlpha x || Char.isDigit x
 
 
 -- | Adds a bunch of non-empty lists to the end of one non-empty list, while
@@ -404,12 +395,6 @@ isNonZeroDigit x = case x of
 -- | Parses a single decimal digit and returns that digit's value.
 parseDigit :: Parser Int
 parseDigit = Char.digitToInt <$> parseIf Char.isDigit
-
-
--- | Returns true if the given character is in the @ALPHA@ range defined by
--- section 1.5 of the RFC.
-isAlpha :: Char -> Bool
-isAlpha x = Char.isAsciiUpper x || Char.isAsciiLower x
 
 
 -- | Parses an @explode@ as defined by section 2.4.2 of the RFC.

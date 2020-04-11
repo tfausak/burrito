@@ -1306,17 +1306,9 @@ instance QC.Arbitrary Name.Name where
 genNonEmpty :: QC.Gen a -> QC.Gen (NonEmpty.NonEmpty a)
 genNonEmpty gen = NonEmpty.NonEmpty <$> gen <*> QC.listOf gen
 
--- TODO: percent escapes, periods
--- TODO: deduplicate with `isVarchar`
+-- TODO: percent escapes, periods: "a", "b.c", "%de", "%01.f", "g.%02", "%03.%04", "a.b.c", "a.bc.d"
 arbitraryNameChar :: QC.Gen Char
-arbitraryNameChar = QC.suchThat QC.arbitrary isNameChar
-
-isNameChar :: Char -> Bool
-isNameChar x = case x of
-  '_' -> True
-  _ -> '0' <= x && x <= '9'
-    || 'A' <= x && x <= 'Z'
-    || 'a' <= x && x <= 'z'
+arbitraryNameChar = QC.suchThat QC.arbitrary Name.isVarchar
 
 instance QC.Arbitrary Literal.Literal where
   arbitrary = Literal.Literal <$> QC.arbitrary
