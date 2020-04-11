@@ -25,6 +25,7 @@ import qualified Data.Either as Either
 import qualified Data.Maybe as Maybe
 import qualified Data.String as String
 import qualified GHC.Exts as Exts
+import qualified GHC.Stack as Stack
 import qualified Test.Hspec as Test
 import qualified Test.QuickCheck as QC
 
@@ -1159,7 +1160,8 @@ main = Test.hspec . Test.describe "Burrito" $ do
       qq [Burrito.uriTemplate|{&a}|] "{&a}"
 
 test
-  :: String
+  :: Stack.HasCallStack
+  => String
   -> Values
   -> Expected
   -> IO ()
