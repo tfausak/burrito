@@ -1,3 +1,5 @@
+-- | Warning: This module is not considered part of Burrito's public API. As
+-- such, it may change at any time. Use it with caution!.
 module Burrito.Type.Value
   ( Value(..)
   ) where
