@@ -5,6 +5,7 @@
 module Burrito.Type.Character
   ( Character(..)
   , isLiteral
+  , makeUnencoded
   ) where
 
 import qualified Data.Word as Word
@@ -19,8 +20,15 @@ data Character
   -- ^ This deliberately is not case sensitive. The tokens @%aa@ and @%AA@ are
   -- both represented as @Encoded 0xAA@.
   | Unencoded Char
-  -- ^ This assumes that the character passes the @isLiteral@ predicate.
+  -- ^ This assumes that the character passes the @isLiteral@ predicate. You
+  -- should prefer using @makeUnencoded@ to create these values.
   deriving (Eq, TH.Lift, Show)
+
+
+-- | If the character passes @isLiteral@, returns an @Unencoded@ character.
+-- Otherwise returns nothing.
+makeUnencoded :: Char -> Maybe Character
+makeUnencoded char = if isLiteral char then Just $ Unencoded char else Nothing
 
 
 -- | Returns true if the given character is in the @literal@ range defined by

@@ -1319,8 +1319,10 @@ instance QC.Arbitrary Literal.Literal where
 instance QC.Arbitrary Character.Character where
   arbitrary = QC.oneof
     [ Character.Encoded <$> QC.arbitrary
-    , Character.Unencoded <$> QC.suchThat QC.arbitrary Character.isLiteral
+    , do
+      char <- QC.suchThat QC.arbitrary Character.isLiteral
+      maybe QC.discard pure $ Character.makeUnencoded char
     ]
   shrink character = case character of
     Character.Encoded word8 -> Character.Encoded <$> QC.shrink word8
-    Character.Unencoded char -> fmap Character.Unencoded . filter Character.isLiteral $ QC.shrink char
+    Character.Unencoded char -> Maybe.mapMaybe Character.makeUnencoded $ QC.shrink char

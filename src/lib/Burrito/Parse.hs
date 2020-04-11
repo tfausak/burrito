@@ -171,7 +171,9 @@ parseCharacter = parseEither parseCharacterUnencoded parseCharacterEncoded
 
 -- | Parses an unencoded character in a literal.
 parseCharacterUnencoded :: Parser Character.Character
-parseCharacterUnencoded = Character.Unencoded <$> parseIf Character.isLiteral
+parseCharacterUnencoded = do
+  char <- parseIf Character.isLiteral
+  maybe Applicative.empty pure $ Character.makeUnencoded char
 
 
 -- | Parses a percent-encoded character in a literal.
