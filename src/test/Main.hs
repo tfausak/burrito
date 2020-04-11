@@ -20,7 +20,9 @@ import qualified Burrito.Type.NonEmpty as NonEmpty
 import qualified Burrito.Type.Operator as Operator
 import qualified Burrito.Type.Template as Template
 import qualified Burrito.Type.Token as Token
+import qualified Burrito.Type.VarChar as VarChar
 import qualified Burrito.Type.Variable as Variable
+import qualified Data.Char as Char
 import qualified Data.Either as Either
 import qualified Data.Maybe as Maybe
 import qualified Data.String as String
@@ -1302,15 +1304,22 @@ instance QC.Arbitrary Modifier.Modifier where
     Modifier.None -> []
 
 instance QC.Arbitrary Name.Name where
-  arbitrary = Name.Name <$> genNonEmpty arbitraryNameChar
-  shrink = fmap Name.Name . QC.shrink . Name.chars
+  arbitrary = Name.Name <$> QC.arbitrary <*> QC.arbitrary
+  shrink name = uncurry Name.Name <$> QC.shrink (Name.first name, Name.rest name)
 
-genNonEmpty :: QC.Gen a -> QC.Gen (NonEmpty.NonEmpty a)
-genNonEmpty gen = NonEmpty.NonEmpty <$> gen <*> QC.listOf gen
-
--- TODO: percent escapes, periods: "a", "b.c", "%de", "%01.f", "g.%02", "%03.%04", "a.b.c", "a.bc.d"
-arbitraryNameChar :: QC.Gen Char
-arbitraryNameChar = QC.suchThat QC.arbitrary Name.isVarchar
+instance QC.Arbitrary VarChar.VarChar where
+  arbitrary = QC.oneof
+    [ do
+      hi <- QC.suchThat QC.arbitrary Char.isHexDigit
+      lo <- QC.suchThat QC.arbitrary Char.isHexDigit
+      maybe QC.discard pure $ VarChar.makeEncoded hi lo
+    , do
+      char <- QC.suchThat QC.arbitrary VarChar.isVarchar
+      maybe QC.discard pure $ VarChar.makeUnencoded char
+    ]
+  shrink varChar = case varChar of
+    VarChar.Encoded hi lo -> uncurry VarChar.Encoded <$> QC.shrink (hi, lo)
+    VarChar.Unencoded char -> Maybe.mapMaybe VarChar.makeUnencoded $ QC.shrink char
 
 instance QC.Arbitrary Literal.Literal where
   arbitrary = Literal.Literal <$> QC.arbitrary

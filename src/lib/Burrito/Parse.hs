@@ -13,6 +13,7 @@ import qualified Burrito.Type.NonEmpty as NonEmpty
 import qualified Burrito.Type.Operator as Operator
 import qualified Burrito.Type.Template as Template
 import qualified Burrito.Type.Token as Token
+import qualified Burrito.Type.VarChar as VarChar
 import qualified Burrito.Type.Variable as Variable
 import qualified Control.Applicative as Applicative
 import qualified Control.Monad as Monad
@@ -211,41 +212,34 @@ parseVarname :: Parser Name.Name
 parseVarname = do
   first <- parseVarcharFirst
   rest <- Applicative.many parseVarcharRest
-  pure . Name.Name $ combine first rest
+  pure Name.Name { Name.first = first, Name.rest = rest }
 
 
 -- | Parses the first character in a variable name, which excludes periods.
-parseVarcharFirst :: Parser (NonEmpty.NonEmpty Char)
+parseVarcharFirst :: Parser VarChar.VarChar
 parseVarcharFirst = parseEither parseVarcharUnencoded parseVarcharEncoded
 
 
 -- | Parses an unencoded character in a variable name.
-parseVarcharUnencoded :: Parser (NonEmpty.NonEmpty Char)
-parseVarcharUnencoded = NonEmpty.singleton <$> parseIf Name.isVarchar
+parseVarcharUnencoded :: Parser VarChar.VarChar
+parseVarcharUnencoded = do
+  char <- parseIf VarChar.isVarchar
+  maybe Applicative.empty pure $ VarChar.makeUnencoded char
 
 
 -- | Parses a percent-encoded character in a variable name.
-parseVarcharEncoded :: Parser (NonEmpty.NonEmpty Char)
+parseVarcharEncoded :: Parser VarChar.VarChar
 parseVarcharEncoded = do
   (hi, lo) <- parsePercentEncoded
-  pure $ nonEmpty '%' [hi, lo]
+  maybe Applicative.empty pure $ VarChar.makeEncoded hi lo
 
 
 -- | Parses a non-first character in a variable name. This is like
 -- 'parseVarcharFirst' except it allows periods.
-parseVarcharRest :: Parser (NonEmpty.NonEmpty Char)
-parseVarcharRest = parseEither
-  (nonEmpty <$> parseChar '.' <*> fmap NonEmpty.toList parseVarcharFirst)
-  parseVarcharFirst
-
-
--- | Adds a bunch of non-empty lists to the end of one non-empty list, while
--- keeping the non-emptiness around.
-combine :: NonEmpty.NonEmpty a -> [NonEmpty.NonEmpty a] -> NonEmpty.NonEmpty a
-combine xs =
-  nonEmpty (NonEmpty.first xs)
-    . mappend (NonEmpty.rest xs)
-    . concatMap NonEmpty.toList
+parseVarcharRest :: Parser (Bool, VarChar.VarChar)
+parseVarcharRest = (,)
+  <$> parseEither (True <$ parseChar_ '.') (pure False)
+  <*> parseVarcharFirst
 
 
 -- | Constructs a non-empty list without using an operator.

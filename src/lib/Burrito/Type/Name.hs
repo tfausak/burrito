@@ -4,11 +4,9 @@
 -- such, it may change at any time. Use it with caution!.
 module Burrito.Type.Name
   ( Name(..)
-  , isVarchar
   ) where
 
-import qualified Burrito.Type.NonEmpty as NonEmpty
-import qualified Data.Char as Char
+import qualified Burrito.Type.VarChar as VarChar
 import qualified Language.Haskell.TH.Syntax as TH
 
 
@@ -16,21 +14,12 @@ import qualified Language.Haskell.TH.Syntax as TH
 -- names allow ASCII letters and numbers, underscores, percent encoded triples,
 -- and periods. However the periods cannot appear at the beginning or end, and
 -- there can't be more than one of them in a row.
-newtype Name = Name
-  { chars :: NonEmpty.NonEmpty Char
+data Name = Name
+  { first :: VarChar.VarChar
+  -- ^ The first character is any valid @varchar@, including underscores and
+  -- percent encoded triples.
+  , rest :: [(Bool, VarChar.VarChar)]
+  -- ^ Every other character has the same constraints, but they may also be
+  -- preceeded by a full stop (period). That's what the @Bool@ represents:
+  -- @True@ means there is a period.
   } deriving (Eq, TH.Lift, Show)
-
-
--- | Returns true if the given character is in the @varchar@ range defined by
--- section 2.3 of the RFC. Note that this does not include the @pct-encoded@
--- part of the grammar because that requires multiple characters to match.
-isVarchar :: Char -> Bool
-isVarchar x = case x of
-  '_' -> True
-  _ -> isAlpha x || Char.isDigit x
-
-
--- | Returns true if the given character is in the @ALPHA@ range defined by
--- section 1.5 of the RFC.
-isAlpha :: Char -> Bool
-isAlpha x = Char.isAsciiUpper x || Char.isAsciiLower x

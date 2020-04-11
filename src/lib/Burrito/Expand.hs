@@ -14,6 +14,7 @@ import qualified Burrito.Type.Operator as Operator
 import qualified Burrito.Type.Template as Template
 import qualified Burrito.Type.Token as Token
 import qualified Burrito.Type.Value as Value
+import qualified Burrito.Type.VarChar as VarChar
 import qualified Burrito.Type.Variable as Variable
 import qualified Data.Bits as Bits
 import qualified Data.Char as Char
@@ -29,7 +30,7 @@ import qualified Text.Printf as Printf
 -- appear in the output.
 expand :: [(String, Value.Value)] -> Template.Template -> String
 expand values = Identity.runIdentity
-  . expandTemplate (pure . flip lookup values . nameToString)
+  . expandTemplate (pure . flip lookup values . expandName)
 
 
 -- | Expands a template for output according to section 3 of the RFC, using the
@@ -237,7 +238,7 @@ expandElements f operator name modifier =
         Operator.QuestionMark -> True
         Operator.Semicolon -> True
         _ -> False
-    prefix = if showPrefix then nameToString name <> "=" else ""
+    prefix = if showPrefix then expandName name <> "=" else ""
     separator = case modifier of
       Modifier.Asterisk -> separatorFor operator
       _ -> ","
@@ -250,9 +251,9 @@ expandString :: Operator.Operator -> Name.Name -> Modifier.Modifier -> String ->
 expandString operator name modifier s =
   let
     prefix = case operator of
-      Operator.Ampersand -> nameToString name <> "="
-      Operator.QuestionMark -> nameToString name <> "="
-      Operator.Semicolon -> nameToString name <> if null s then "" else "="
+      Operator.Ampersand -> expandName name <> "="
+      Operator.QuestionMark -> expandName name <> "="
+      Operator.Semicolon -> expandName name <> if null s then "" else "="
       _ -> ""
   in prefix <> escapeString operator modifier s
 
@@ -267,9 +268,19 @@ escapeString operator modifier string =
     _ -> string
 
 
--- | Converts a name into a regular string.
-nameToString :: Name.Name -> String
-nameToString = NonEmpty.toList . Name.chars
+-- | Expands a variable name for output.
+expandName :: Name.Name -> String
+expandName name = mconcat
+  [ expandVarChar $ Name.first name
+  , concatMap (\ (x, y) -> (if x then "." else "") <> expandVarChar y) $ Name.rest name
+  ]
+
+
+-- | Expands a single logical character of a variable name for output.
+expandVarChar :: VarChar.VarChar -> String
+expandVarChar varChar = case varChar of
+  VarChar.Encoded hi lo -> ['%', hi, lo]
+  VarChar.Unencoded char -> [char]
 
 
 -- | Encodes a character as a series of UTF-8 octets. The resulting list will

@@ -52,6 +52,7 @@ library
     Burrito.Type.Template
     Burrito.Type.Token
     Burrito.Type.Value
+    Burrito.Type.VarChar
     Burrito.Type.Variable
   ghc-options:
     -Weverything

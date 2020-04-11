@@ -14,6 +14,7 @@ import qualified Burrito.Type.NonEmpty as NonEmpty
 import qualified Burrito.Type.Operator as Operator
 import qualified Burrito.Type.Template as Template
 import qualified Burrito.Type.Token as Token
+import qualified Burrito.Type.VarChar as VarChar
 import qualified Burrito.Type.Variable as Variable
 import qualified Data.List as List
 import qualified Data.Word as Word
@@ -71,7 +72,17 @@ renderVariable variable = mconcat
 
 -- | Renders a variable name.
 renderName :: Name.Name -> String
-renderName = NonEmpty.toList . Name.chars
+renderName name = mconcat
+  [ renderVarChar $ Name.first name
+  , concatMap (\ (x, y) -> (if x then "." else "") <> renderVarChar y) $ Name.rest name
+  ]
+
+
+-- | Renders one logical character of a variable name.
+renderVarChar :: VarChar.VarChar -> String
+renderVarChar varChar = case varChar of
+  VarChar.Encoded hi lo -> ['%', hi, lo]
+  VarChar.Unencoded char -> [char]
 
 
 -- | Renders a variable modifier.
