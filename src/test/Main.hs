@@ -22,6 +22,7 @@ import qualified Burrito.Type.Template as Template
 import qualified Burrito.Type.Token as Token
 import qualified Burrito.Type.Variable as Variable
 import qualified Data.Either as Either
+import qualified Data.Maybe as Maybe
 import qualified Data.String as String
 import qualified GHC.Exts as Exts
 import qualified Test.Hspec as Test
@@ -1288,12 +1289,14 @@ instance QC.Arbitrary Variable.Variable where
 instance QC.Arbitrary Modifier.Modifier where
   arbitrary = QC.oneof
     [ pure Modifier.Asterisk
-    , Modifier.Colon <$> QC.choose (1, 9999)
+    , do
+      maxLength <- QC.choose (1, 9999)
+      maybe QC.discard pure $ Modifier.makeColon maxLength
     , pure Modifier.None
     ]
   shrink modifier = case modifier of
     Modifier.Asterisk -> [Modifier.None]
-    Modifier.Colon int -> fmap Modifier.Colon . filter (\ x -> 1 <= x && x <= 9999) $ QC.shrink int
+    Modifier.Colon int -> Maybe.mapMaybe Modifier.makeColon $ QC.shrink int
     Modifier.None -> []
 
 instance QC.Arbitrary Name.Name where
