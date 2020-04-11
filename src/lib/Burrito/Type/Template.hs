@@ -4,7 +4,8 @@
 -- such, it may change at any time. Use it with caution!.
 module Burrito.Type.Template
   ( Template(..)
-  ) where
+  )
+where
 
 import qualified Burrito.Type.Token as Token
 import qualified Language.Haskell.TH.Syntax as TH

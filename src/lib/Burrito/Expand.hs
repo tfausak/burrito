@@ -2,7 +2,8 @@
 -- such, it may change at any time. Use it with caution!.
 module Burrito.Expand
   ( expand
-  ) where
+  )
+where
 
 import qualified Burrito.Type.Expression as Expression
 import qualified Burrito.Type.LitChar as LitChar
@@ -36,20 +37,30 @@ expand values = Identity.runIdentity
 -- | Expands a template for output according to section 3 of the RFC, using the
 -- given function to resolve variable values.
 expandTemplate
-  :: Applicative m => (Name.Name -> m (Maybe Value.Value)) -> Template.Template -> m String
+  :: Applicative m
+  => (Name.Name -> m (Maybe Value.Value))
+  -> Template.Template
+  -> m String
 expandTemplate f = expandTokens f . Template.tokens
 
 
 -- | Expands tokens for output according to section 3 of the RFC, using the
 -- given function to resolve variable values.
 expandTokens
-  :: Applicative m => (Name.Name -> m (Maybe Value.Value)) -> [Token.Token] -> m String
+  :: Applicative m
+  => (Name.Name -> m (Maybe Value.Value))
+  -> [Token.Token]
+  -> m String
 expandTokens f = fmap concat . traverse (expandToken f)
 
 
 -- | Expands a token for output according to section 3 of the RFC, using the
 -- given function to resolve variable values.
-expandToken :: Applicative m => (Name.Name -> m (Maybe Value.Value)) -> Token.Token -> m String
+expandToken
+  :: Applicative m
+  => (Name.Name -> m (Maybe Value.Value))
+  -> Token.Token
+  -> m String
 expandToken f token = case token of
   Token.Literal literal -> pure $ expandLiteral literal
   Token.Expression expression -> expandExpression f expression
@@ -57,7 +68,8 @@ expandToken f token = case token of
 
 -- | Expands a literal token for output according to section 3.1 of the RFC.
 expandLiteral :: Literal.Literal -> String
-expandLiteral = concatMap expandCharacter . NonEmpty.toList . Literal.characters
+expandLiteral =
+  concatMap expandCharacter . NonEmpty.toList . Literal.characters
 
 
 -- | Expands a single literal character for output. This is necessary to
@@ -100,7 +112,10 @@ percentEncodeWord8 = Printf.printf "%%%02X"
 -- | Expands an expression for output according to section 3.2 of the RFC,
 -- using the given function to resolve variable values.
 expandExpression
-  :: Applicative m => (Name.Name -> m (Maybe Value.Value)) -> Expression.Expression -> m String
+  :: Applicative m
+  => (Name.Name -> m (Maybe Value.Value))
+  -> Expression.Expression
+  -> m String
 expandExpression f expression =
   let
     operator = Expression.operator expression
@@ -168,7 +183,12 @@ expandVariable f operator variable =
 
 -- | If the given value is not nothing, expand it according to section 3.2.1 of
 -- the RFC.
-expandMaybeValue :: Operator.Operator -> Name.Name -> Modifier.Modifier -> Maybe Value.Value -> Maybe String
+expandMaybeValue
+  :: Operator.Operator
+  -> Name.Name
+  -> Modifier.Modifier
+  -> Maybe Value.Value
+  -> Maybe String
 expandMaybeValue operator name modifier maybeValue = do
   value <- maybeValue
   expandValue operator name modifier value
@@ -176,7 +196,12 @@ expandMaybeValue operator name modifier maybeValue = do
 
 -- | Expands a value for output according to section 3.2.1 of the RFC. If the
 -- value is undefined according to section 2.3, this returns nothing.
-expandValue :: Operator.Operator -> Name.Name -> Modifier.Modifier -> Value.Value -> Maybe String
+expandValue
+  :: Operator.Operator
+  -> Name.Name
+  -> Modifier.Modifier
+  -> Value.Value
+  -> Maybe String
 expandValue operator name modifier value = case value of
   Value.Dictionary dictionary ->
     expandDictionary operator name modifier <$> NonEmpty.fromList dictionary
@@ -197,7 +222,8 @@ expandDictionary = expandElements
 
 
 -- | Expands one element of a dictionary value for output.
-expandDictionaryElement :: Operator.Operator -> Modifier.Modifier -> (String, String) -> [String]
+expandDictionaryElement
+  :: Operator.Operator -> Modifier.Modifier -> (String, String) -> [String]
 expandDictionaryElement operator modifier (name, value) =
   let escape = escapeString operator Modifier.None
   in
@@ -208,13 +234,18 @@ expandDictionaryElement operator modifier (name, value) =
 
 -- | Expands a list value for output.
 expandList
-  :: Operator.Operator -> Name.Name -> Modifier.Modifier -> NonEmpty.NonEmpty String -> String
+  :: Operator.Operator
+  -> Name.Name
+  -> Modifier.Modifier
+  -> NonEmpty.NonEmpty String
+  -> String
 expandList = expandElements $ \operator name modifier ->
   pure . expandListElement operator name modifier
 
 
 -- | Expands one element of a list value for output.
-expandListElement :: Operator.Operator -> Name.Name -> Modifier.Modifier -> String -> String
+expandListElement
+  :: Operator.Operator -> Name.Name -> Modifier.Modifier -> String -> String
 expandListElement operator name modifier = case modifier of
   Modifier.Asterisk -> expandString operator name Modifier.None
   _ -> expandString Operator.None name Modifier.None
@@ -242,12 +273,16 @@ expandElements f operator name modifier =
     separator = case modifier of
       Modifier.Asterisk -> separatorFor operator
       _ -> ","
-  in mappend prefix . List.intercalate separator . concatMap
-    (f operator name modifier) . NonEmpty.toList
+  in
+    mappend prefix
+    . List.intercalate separator
+    . concatMap (f operator name modifier)
+    . NonEmpty.toList
 
 
 -- | Expands a string value for output.
-expandString :: Operator.Operator -> Name.Name -> Modifier.Modifier -> String -> String
+expandString
+  :: Operator.Operator -> Name.Name -> Modifier.Modifier -> String -> String
 expandString operator name modifier s =
   let
     prefix = case operator of
@@ -272,7 +307,11 @@ escapeString operator modifier string =
 expandName :: Name.Name -> String
 expandName name = mconcat
   [ expandVarChar $ Name.first name
-  , concatMap (\ (x, y) -> (if x then "." else "") <> expandVarChar y) $ Name.rest name
+  , concatMap
+      (\(fullStop, varChar) ->
+        (if fullStop then "." else "") <> expandVarChar varChar
+      )
+    $ Name.rest name
   ]
 
 

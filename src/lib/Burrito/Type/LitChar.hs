@@ -6,7 +6,8 @@ module Burrito.Type.LitChar
   ( LitChar(..)
   , isLiteral
   , makeUnencoded
-  ) where
+  )
+where
 
 import qualified Data.Word as Word
 import qualified Language.Haskell.TH.Syntax as TH

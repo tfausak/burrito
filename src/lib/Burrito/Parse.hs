@@ -2,7 +2,8 @@
 -- such, it may change at any time. Use it with caution!.
 module Burrito.Parse
   ( parse
-  ) where
+  )
+where
 
 import qualified Burrito.Type.Expression as Expression
 import qualified Burrito.Type.LitChar as LitChar
@@ -204,7 +205,10 @@ parseVarspec :: Parser Variable.Variable
 parseVarspec = do
   name <- parseVarname
   modifier <- parseModifier
-  pure $ Variable.Variable { Variable.name = name, Variable.modifier = modifier }
+  pure $ Variable.Variable
+    { Variable.name = name
+    , Variable.modifier = modifier
+    }
 
 
 -- | Parses a @varname@ as defined by section 2.3 of the RFC.
@@ -237,9 +241,10 @@ parseVarcharEncoded = do
 -- | Parses a non-first character in a variable name. This is like
 -- 'parseVarcharFirst' except it allows periods.
 parseVarcharRest :: Parser (Bool, VarChar.VarChar)
-parseVarcharRest = (,)
-  <$> parseEither (True <$ parseChar_ '.') (pure False)
-  <*> parseVarcharFirst
+parseVarcharRest =
+  (,)
+    <$> parseEither (True <$ parseChar_ '.') (pure False)
+    <*> parseVarcharFirst
 
 
 -- | Constructs a non-empty list without using an operator.
@@ -350,7 +355,7 @@ parseMaxLength = do
 -- | Converts a backwards list of digits into the number that they represent.
 -- For example @[2, 1]@ becomes @12@.
 fromDigits :: [Int] -> Int
-fromDigits = foldr (\ digit -> (+ digit) . (* 10)) 0
+fromDigits = foldr (\digit -> (+ digit) . (* 10)) 0
 
 
 -- | Parses up to the given number of occurrences of the given parser. If the

@@ -2,7 +2,8 @@
 -- such, it may change at any time. Use it with caution!.
 module Burrito.TH
   ( uriTemplate
-  ) where
+  )
+where
 
 import qualified Burrito.Parse as Parse
 import qualified Language.Haskell.TH.Quote as TH

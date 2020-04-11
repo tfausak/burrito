@@ -4,7 +4,8 @@
 -- such, it may change at any time. Use it with caution!.
 module Burrito.Type.Operator
   ( Operator(..)
-  ) where
+  )
+where
 
 import qualified Language.Haskell.TH.Syntax as TH
 

@@ -74,7 +74,11 @@ renderVariable variable = mconcat
 renderName :: Name.Name -> String
 renderName name = mconcat
   [ renderVarChar $ Name.first name
-  , concatMap (\ (x, y) -> (if x then "." else "") <> renderVarChar y) $ Name.rest name
+  , concatMap
+      (\(fullStop, varChar) ->
+        (if fullStop then "." else "") <> renderVarChar varChar
+      )
+    $ Name.rest name
   ]
 
 
@@ -95,7 +99,8 @@ renderModifier modifier = case modifier of
 
 -- | Renders a literal token.
 renderLiteral :: Literal.Literal -> String
-renderLiteral = concatMap renderCharacter . NonEmpty.toList . Literal.characters
+renderLiteral =
+  concatMap renderCharacter . NonEmpty.toList . Literal.characters
 
 
 -- | Renders a character in a literal token.

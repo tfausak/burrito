@@ -4,7 +4,8 @@
 -- such, it may change at any time. Use it with caution!.
 module Burrito.Type.Name
   ( Name(..)
-  ) where
+  )
+where
 
 import qualified Burrito.Type.VarChar as VarChar
 import qualified Language.Haskell.TH.Syntax as TH

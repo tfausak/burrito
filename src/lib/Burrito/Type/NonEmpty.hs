@@ -7,7 +7,8 @@ module Burrito.Type.NonEmpty
   , fromList
   , singleton
   , toList
-  ) where
+  )
+where
 
 import qualified Language.Haskell.TH.Syntax as TH
 

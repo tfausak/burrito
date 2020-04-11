@@ -34,9 +34,6 @@ import qualified Test.QuickCheck as QC
 main :: IO ()
 main = Test.hspec . Test.describe "Burrito" $ do
 
-  Test.it "round trips" . QC.property $ \ (Template template) ->
-    fmap Burrito.render (Burrito.parse (Burrito.render template)) == Just (Burrito.render template)
-
   Test.it "accepts empty templates" $ do
     test "" [] ""
 
@@ -519,7 +516,9 @@ main = Test.hspec . Test.describe "Burrito" $ do
       test "{semi:2}" values "%3B"
 
     Test.it "section 2.4.2" $ do
-      let values = ["year" =: ["1965", "2000", "2012"], "dom" =: ["example", "com"]] :: Values
+      let
+        values =
+          ["year" =: ["1965", "2000", "2012"], "dom" =: ["example", "com"]] :: Values
       test "find{?year*}" values "find?year=1965&year=2000&year=2012"
       test "www{.dom*}" values "www.example.com"
 
@@ -1161,15 +1160,14 @@ main = Test.hspec . Test.describe "Burrito" $ do
       qq [Burrito.uriTemplate|{?a}|] "{?a}"
       qq [Burrito.uriTemplate|{&a}|] "{&a}"
 
-test
-  :: Stack.HasCallStack
-  => String
-  -> Values
-  -> Expected
-  -> IO ()
+  Test.it "round trips" . QC.property $ \template ->
+    let rendered = Burrito.render $ unwrapTemplate template
+    in fmap Burrito.render (Burrito.parse rendered) == Just rendered
+
+test :: Stack.HasCallStack => String -> Values -> Expected -> IO ()
 test input values output =
   fmap (Burrito.expand (fmap (fmap unwrapValue) values)) (Burrito.parse input)
-  `Test.shouldBe` expectedToMaybe output
+    `Test.shouldBe` expectedToMaybe output
 
 data Expected
   = Failure
@@ -1247,9 +1245,7 @@ instance QC.Arbitrary Template.Template where
 
 instance QC.Arbitrary Token.Token where
   arbitrary = QC.oneof
-    [ Token.Expression <$> QC.arbitrary
-    , Token.Literal <$> QC.arbitrary
-    ]
+    [Token.Expression <$> QC.arbitrary, Token.Literal <$> QC.arbitrary]
   shrink token = case token of
     Token.Expression expression -> Token.Expression <$> QC.shrink expression
     Token.Literal literal -> Token.Literal <$> QC.shrink literal
@@ -1257,9 +1253,7 @@ instance QC.Arbitrary Token.Token where
 instance QC.Arbitrary Expression.Expression where
   arbitrary = Expression.Expression <$> QC.arbitrary <*> QC.arbitrary
   shrink expression = uncurry Expression.Expression <$> QC.shrink
-    ( Expression.operator expression
-    , Expression.variables expression
-    )
+    (Expression.operator expression, Expression.variables expression)
 
 instance QC.Arbitrary Operator.Operator where
   arbitrary = QC.elements
@@ -1278,17 +1272,13 @@ instance QC.Arbitrary Operator.Operator where
 
 instance (QC.Arbitrary a) => QC.Arbitrary (NonEmpty.NonEmpty a) where
   arbitrary = NonEmpty.NonEmpty <$> QC.arbitrary <*> QC.arbitrary
-  shrink nonEmpty = uncurry NonEmpty.NonEmpty <$> QC.shrink
-    ( NonEmpty.first nonEmpty
-    , NonEmpty.rest nonEmpty
-    )
+  shrink nonEmpty = uncurry NonEmpty.NonEmpty
+    <$> QC.shrink (NonEmpty.first nonEmpty, NonEmpty.rest nonEmpty)
 
 instance QC.Arbitrary Variable.Variable where
   arbitrary = Variable.Variable <$> QC.arbitrary <*> QC.arbitrary
-  shrink variable = uncurry Variable.Variable <$> QC.shrink
-    ( Variable.modifier variable
-    , Variable.name variable
-    )
+  shrink variable = uncurry Variable.Variable
+    <$> QC.shrink (Variable.modifier variable, Variable.name variable)
 
 instance QC.Arbitrary Modifier.Modifier where
   arbitrary = QC.oneof
@@ -1305,7 +1295,8 @@ instance QC.Arbitrary Modifier.Modifier where
 
 instance QC.Arbitrary Name.Name where
   arbitrary = Name.Name <$> QC.arbitrary <*> QC.arbitrary
-  shrink name = uncurry Name.Name <$> QC.shrink (Name.first name, Name.rest name)
+  shrink name =
+    uncurry Name.Name <$> QC.shrink (Name.first name, Name.rest name)
 
 instance QC.Arbitrary VarChar.VarChar where
   arbitrary = QC.oneof
@@ -1319,7 +1310,8 @@ instance QC.Arbitrary VarChar.VarChar where
     ]
   shrink varChar = case varChar of
     VarChar.Encoded hi lo -> uncurry VarChar.Encoded <$> QC.shrink (hi, lo)
-    VarChar.Unencoded char -> Maybe.mapMaybe VarChar.makeUnencoded $ QC.shrink char
+    VarChar.Unencoded char ->
+      Maybe.mapMaybe VarChar.makeUnencoded $ QC.shrink char
 
 instance QC.Arbitrary Literal.Literal where
   arbitrary = Literal.Literal <$> QC.arbitrary
@@ -1334,4 +1326,5 @@ instance QC.Arbitrary LitChar.LitChar where
     ]
   shrink character = case character of
     LitChar.Encoded word8 -> LitChar.Encoded <$> QC.shrink word8
-    LitChar.Unencoded char -> Maybe.mapMaybe LitChar.makeUnencoded $ QC.shrink char
+    LitChar.Unencoded char ->
+      Maybe.mapMaybe LitChar.makeUnencoded $ QC.shrink char

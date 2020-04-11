@@ -4,7 +4,8 @@
 -- such, it may change at any time. Use it with caution!.
 module Burrito.Type.Literal
   ( Literal(..)
-  ) where
+  )
+where
 
 import qualified Burrito.Type.LitChar as LitChar
 import qualified Burrito.Type.NonEmpty as NonEmpty

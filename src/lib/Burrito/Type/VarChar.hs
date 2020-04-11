@@ -32,8 +32,7 @@ data VarChar
 -- | Makes sure that both characters are valid hexadecimal digits. If they are,
 -- returns an @Encoded@ character. Otherwise returns nothing.
 makeEncoded :: Char -> Char -> Maybe VarChar
-makeEncoded hi lo =
-  if Char.isHexDigit hi && Char.isHexDigit lo
+makeEncoded hi lo = if Char.isHexDigit hi && Char.isHexDigit lo
   then Just $ Encoded hi lo
   else Nothing
 

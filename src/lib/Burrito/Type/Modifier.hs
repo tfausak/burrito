@@ -5,7 +5,8 @@
 module Burrito.Type.Modifier
   ( Modifier(..)
   , makeColon
-  ) where
+  )
+where
 
 import qualified Language.Haskell.TH.Syntax as TH
 

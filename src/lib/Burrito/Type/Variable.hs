@@ -4,7 +4,8 @@
 -- such, it may change at any time. Use it with caution!.
 module Burrito.Type.Variable
   ( Variable(..)
-  ) where
+  )
+where
 
 import qualified Burrito.Type.Modifier as Modifier
 import qualified Burrito.Type.Name as Name
