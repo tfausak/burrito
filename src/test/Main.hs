@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -9,13 +11,27 @@ module Main
 where
 
 import qualified Burrito
-import qualified GHC.Exts as Exts
+import qualified Burrito.Type.Character as Character
+import qualified Burrito.Type.Expression as Expression
+import qualified Burrito.Type.Literal as Literal
+import qualified Burrito.Type.Modifier as Modifier
+import qualified Burrito.Type.Name as Name
+import qualified Burrito.Type.NonEmpty as NonEmpty
+import qualified Burrito.Type.Operator as Operator
+import qualified Burrito.Type.Template as Template
+import qualified Burrito.Type.Token as Token
+import qualified Burrito.Type.Variable as Variable
 import qualified Data.Either as Either
 import qualified Data.String as String
+import qualified GHC.Exts as Exts
 import qualified Test.Hspec as Test
+import qualified Test.QuickCheck as QC
 
 main :: IO ()
 main = Test.hspec . Test.describe "Burrito" $ do
+
+  Test.it "round trips" . QC.property $ \ (Template template) ->
+    fmap Burrito.render (Burrito.parse (Burrito.render template)) == Just (Burrito.render template)
 
   Test.it "accepts empty templates" $ do
     test "" [] ""
@@ -1208,3 +1224,146 @@ instance Pair Item where
   type K Item = String
   type V Item = String
   key =: value = Item $ Right (key, value)
+
+newtype Template = Template
+  { unwrapTemplate :: Burrito.Template
+  } deriving (Eq)
+
+instance Show Template where
+  show (Template t) = show (Burrito.render t, t)
+
+instance QC.Arbitrary Template where
+  arbitrary = Template <$> QC.arbitrary
+  shrink = fmap Template . QC.shrink . unwrapTemplate
+
+instance QC.Arbitrary Template.Template where
+  arbitrary = Template.Template <$> QC.arbitrary
+  shrink = fmap Template.Template . QC.shrink . Template.tokens
+
+instance QC.Arbitrary Token.Token where
+  arbitrary = QC.oneof
+    [ Token.Expression <$> QC.arbitrary
+    , Token.Literal <$> QC.arbitrary
+    ]
+  shrink token = case token of
+    Token.Expression expression -> Token.Expression <$> QC.shrink expression
+    Token.Literal literal -> Token.Literal <$> QC.shrink literal
+
+instance QC.Arbitrary Expression.Expression where
+  arbitrary = Expression.Expression <$> QC.arbitrary <*> QC.arbitrary
+  shrink expression = uncurry Expression.Expression <$> QC.shrink
+    ( Expression.operator expression
+    , Expression.variables expression
+    )
+
+instance QC.Arbitrary Operator.Operator where
+  arbitrary = QC.elements
+    [ Operator.Ampersand
+    , Operator.FullStop
+    , Operator.None
+    , Operator.NumberSign
+    , Operator.PlusSign
+    , Operator.QuestionMark
+    , Operator.Semicolon
+    , Operator.Solidus
+    ]
+  shrink operator = case operator of
+    Operator.None -> []
+    _ -> [Operator.None]
+
+instance (QC.Arbitrary a) => QC.Arbitrary (NonEmpty.NonEmpty a) where
+  arbitrary = NonEmpty.NonEmpty <$> QC.arbitrary <*> QC.arbitrary
+  shrink nonEmpty = uncurry NonEmpty.NonEmpty <$> QC.shrink
+    ( NonEmpty.first nonEmpty
+    , NonEmpty.rest nonEmpty
+    )
+
+instance QC.Arbitrary Variable.Variable where
+  arbitrary = Variable.Variable <$> QC.arbitrary <*> QC.arbitrary
+  shrink variable = uncurry Variable.Variable <$> QC.shrink
+    ( Variable.modifier variable
+    , Variable.name variable
+    )
+
+instance QC.Arbitrary Modifier.Modifier where
+  arbitrary = QC.oneof
+    [ pure Modifier.Asterisk
+    , Modifier.Colon <$> QC.choose (1, 9999)
+    , pure Modifier.None
+    ]
+  shrink modifier = case modifier of
+    Modifier.Asterisk -> [Modifier.None]
+    Modifier.Colon int -> fmap Modifier.Colon . filter (\ x -> 1 <= x && x <= 9999) $ QC.shrink int
+    Modifier.None -> []
+
+instance QC.Arbitrary Name.Name where
+  arbitrary = Name.Name <$> genNonEmpty arbitraryNameChar
+  shrink = fmap Name.Name . QC.shrink . Name.chars
+
+genNonEmpty :: QC.Gen a -> QC.Gen (NonEmpty.NonEmpty a)
+genNonEmpty gen = NonEmpty.NonEmpty <$> gen <*> QC.listOf gen
+
+-- TODO: percent escapes, periods
+-- TODO: deduplicate with `isVarchar`
+arbitraryNameChar :: QC.Gen Char
+arbitraryNameChar = QC.suchThat QC.arbitrary isNameChar
+
+isNameChar :: Char -> Bool
+isNameChar x = case x of
+  '_' -> True
+  _ -> '0' <= x && x <= '9'
+    || 'A' <= x && x <= 'Z'
+    || 'a' <= x && x <= 'z'
+
+instance QC.Arbitrary Literal.Literal where
+  arbitrary = Literal.Literal <$> QC.arbitrary
+  shrink = fmap Literal.Literal . QC.shrink . Literal.characters
+
+instance QC.Arbitrary Character.Character where
+  arbitrary = QC.oneof
+    [ Character.Encoded <$> QC.arbitrary
+    , Character.Unencoded <$> arbitraryLiteralChar
+    ]
+  shrink character = case character of
+    Character.Encoded word8 -> Character.Encoded <$> QC.shrink word8
+    Character.Unencoded char -> fmap Character.Unencoded . filter isLiteralChar $ QC.shrink char
+
+-- TODO: deduplicate with `isLiteral`
+arbitraryLiteralChar :: QC.Gen Char
+arbitraryLiteralChar = QC.suchThat QC.arbitrary isLiteralChar
+
+isLiteralChar :: Char -> Bool
+isLiteralChar x = case x of
+  ' ' -> False
+  '"' -> False
+  '\'' -> False
+  '%' -> False
+  '<' -> False
+  '>' -> False
+  '\\' -> False
+  '^' -> False
+  '`' -> False
+  '{' -> False
+  '|' -> False
+  '}' -> False
+  _ -> '\x20' <= x && x <= '\x7e'
+    || '\xa0' <= x && x <= '\xd7ff'
+    || '\xf900' <= x && x <= '\xfdcf'
+    || '\xfdf0' <= x && x <= '\xffef'
+    || '\x10000' <= x && x <= '\x1fffd'
+    || '\x20000' <= x && x <= '\x2fffd'
+    || '\x30000' <= x && x <= '\x3fffd'
+    || '\x40000' <= x && x <= '\x4fffd'
+    || '\x50000' <= x && x <= '\x5fffd'
+    || '\x60000' <= x && x <= '\x6fffd'
+    || '\x70000' <= x && x <= '\x7fffd'
+    || '\x80000' <= x && x <= '\x8fffd'
+    || '\x90000' <= x && x <= '\x9fffd'
+    || '\xa0000' <= x && x <= '\xafffd'
+    || '\xb0000' <= x && x <= '\xbfffd'
+    || '\xc0000' <= x && x <= '\xcfffd'
+    || '\xd0000' <= x && x <= '\xdfffd'
+    || '\xe1000' <= x && x <= '\xefffd'
+    || '\xe000' <= x && x <= '\xf8ff'
+    || '\xf0000' <= x && x <= '\xffffd'
+    || '\x100000' <= x && x <= '\x10fffd'

@@ -75,6 +75,7 @@ test-suite test
     base -any
     , burrito -any
     , hspec >= 2.7.1 && < 2.8
+    , QuickCheck >= 2.13.2 && < 2.14
   default-language: Haskell98
   hs-source-dirs: src/test
   main-is: Main.hs
