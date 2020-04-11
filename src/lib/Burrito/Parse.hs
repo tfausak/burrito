@@ -1,9 +1,12 @@
+-- | Warning: This module is not considered part of Burrito's public API. As
+-- such, it may change at any time. Use it with caution!.
 module Burrito.Parse
   ( parse
-  ) where
+  )
+where
 
-import qualified Burrito.Type.Character as Character
 import qualified Burrito.Type.Expression as Expression
+import qualified Burrito.Type.LitChar as LitChar
 import qualified Burrito.Type.Literal as Literal
 import qualified Burrito.Type.Modifier as Modifier
 import qualified Burrito.Type.Name as Name
@@ -11,6 +14,7 @@ import qualified Burrito.Type.NonEmpty as NonEmpty
 import qualified Burrito.Type.Operator as Operator
 import qualified Burrito.Type.Template as Template
 import qualified Burrito.Type.Token as Token
+import qualified Burrito.Type.VarChar as VarChar
 import qualified Burrito.Type.Variable as Variable
 import qualified Control.Applicative as Applicative
 import qualified Control.Monad as Monad
@@ -163,20 +167,22 @@ parseLiteral = Literal.Literal <$> parseNonEmpty parseCharacter
 
 
 -- | Parses a character in a literal.
-parseCharacter :: Parser Character.Character
+parseCharacter :: Parser LitChar.LitChar
 parseCharacter = parseEither parseCharacterUnencoded parseCharacterEncoded
 
 
 -- | Parses an unencoded character in a literal.
-parseCharacterUnencoded :: Parser Character.Character
-parseCharacterUnencoded = Character.Unencoded <$> parseIf isLiteral
+parseCharacterUnencoded :: Parser LitChar.LitChar
+parseCharacterUnencoded = do
+  char <- parseIf LitChar.isLiteral
+  maybe Applicative.empty pure $ LitChar.makeUnencoded char
 
 
 -- | Parses a percent-encoded character in a literal.
-parseCharacterEncoded :: Parser Character.Character
+parseCharacterEncoded :: Parser LitChar.LitChar
 parseCharacterEncoded = do
   (hi, lo) <- parsePercentEncoded
-  pure . Character.Encoded $ intToWord8
+  pure . LitChar.Encoded $ intToWord8
     (Char.digitToInt hi * 16 + Char.digitToInt lo)
 
 
@@ -199,7 +205,10 @@ parseVarspec :: Parser Variable.Variable
 parseVarspec = do
   name <- parseVarname
   modifier <- parseModifier
-  pure $ Variable.Variable { Variable.name = name, Variable.modifier = modifier }
+  pure $ Variable.Variable
+    { Variable.name = name
+    , Variable.modifier = modifier
+    }
 
 
 -- | Parses a @varname@ as defined by section 2.3 of the RFC.
@@ -207,50 +216,35 @@ parseVarname :: Parser Name.Name
 parseVarname = do
   first <- parseVarcharFirst
   rest <- Applicative.many parseVarcharRest
-  pure . Name.Name $ combine first rest
+  pure Name.Name { Name.first = first, Name.rest = rest }
 
 
 -- | Parses the first character in a variable name, which excludes periods.
-parseVarcharFirst :: Parser (NonEmpty.NonEmpty Char)
+parseVarcharFirst :: Parser VarChar.VarChar
 parseVarcharFirst = parseEither parseVarcharUnencoded parseVarcharEncoded
 
 
 -- | Parses an unencoded character in a variable name.
-parseVarcharUnencoded :: Parser (NonEmpty.NonEmpty Char)
-parseVarcharUnencoded = NonEmpty.singleton <$> parseIf isVarchar
+parseVarcharUnencoded :: Parser VarChar.VarChar
+parseVarcharUnencoded = do
+  char <- parseIf VarChar.isVarchar
+  maybe Applicative.empty pure $ VarChar.makeUnencoded char
 
 
 -- | Parses a percent-encoded character in a variable name.
-parseVarcharEncoded :: Parser (NonEmpty.NonEmpty Char)
+parseVarcharEncoded :: Parser VarChar.VarChar
 parseVarcharEncoded = do
   (hi, lo) <- parsePercentEncoded
-  pure $ nonEmpty '%' [hi, lo]
+  maybe Applicative.empty pure $ VarChar.makeEncoded hi lo
 
 
 -- | Parses a non-first character in a variable name. This is like
 -- 'parseVarcharFirst' except it allows periods.
-parseVarcharRest :: Parser (NonEmpty.NonEmpty Char)
-parseVarcharRest = parseEither
-  (nonEmpty <$> parseChar '.' <*> fmap NonEmpty.toList parseVarcharFirst)
-  parseVarcharFirst
-
-
--- | Returns true if the given character is in the @varchar@ range defined by
--- section 2.3 of the RFC. Note that this does not include the @pct-encoded@
--- part of the grammar because that requires multiple characters to match.
-isVarchar :: Char -> Bool
-isVarchar x = case x of
-  '_' -> True
-  _ -> isAlpha x || Char.isDigit x
-
-
--- | Adds a bunch of non-empty lists to the end of one non-empty list, while
--- keeping the non-emptiness around.
-combine :: NonEmpty.NonEmpty a -> [NonEmpty.NonEmpty a] -> NonEmpty.NonEmpty a
-combine xs =
-  nonEmpty (NonEmpty.first xs)
-    . mappend (NonEmpty.rest xs)
-    . concatMap NonEmpty.toList
+parseVarcharRest :: Parser (Bool, VarChar.VarChar)
+parseVarcharRest =
+  (,)
+    <$> parseEither (True <$ parseChar_ '.') (pure False)
+    <*> parseVarcharFirst
 
 
 -- | Constructs a non-empty list without using an operator.
@@ -346,7 +340,8 @@ parseModifier =
 parsePrefixModifier :: Parser Modifier.Modifier
 parsePrefixModifier = do
   parseChar_ ':'
-  Modifier.Colon <$> parseMaxLength
+  maxLength <- parseMaxLength
+  maybe Applicative.empty pure $ Modifier.makeColon maxLength
 
 
 -- | Parses a @max-length@ as defined by section 2.4.1 of the RFC.
@@ -354,18 +349,21 @@ parseMaxLength :: Parser Int
 parseMaxLength = do
   first <- parseNonZeroDigit
   rest <- parseUpTo 3 parseDigit
-  pure . fromDigits $ nonEmpty first rest
+  pure . fromDigits $ rest <> [first]
 
 
--- | Converts a list of digits into the number that they represent. For example
--- @[1, 2]@ becomes @12@.
-fromDigits :: NonEmpty.NonEmpty Int -> Int
-fromDigits = foldr1 ((+) . (10 *)) . NonEmpty.toList
+-- | Converts a backwards list of digits into the number that they represent.
+-- For example @[2, 1]@ becomes @12@.
+fromDigits :: [Int] -> Int
+fromDigits = foldr (\digit -> (+ digit) . (* 10)) 0
 
 
 -- | Parses up to the given number of occurrences of the given parser. If the
 -- number is less than one, this will always succeed by returning the empty
 -- list.
+--
+-- Note that for performance reasons this returns the list in reverse order. If
+-- you need it in the order it was present in the input, use @reverse@.
 parseUpTo :: Int -> Parser a -> Parser [a]
 parseUpTo = parseUpToWith []
 
@@ -400,73 +398,6 @@ parseDigit :: Parser Int
 parseDigit = Char.digitToInt <$> parseIf Char.isDigit
 
 
--- | Returns true if the given character is in the @ALPHA@ range defined by
--- section 1.5 of the RFC.
-isAlpha :: Char -> Bool
-isAlpha x = Char.isAsciiUpper x || Char.isAsciiLower x
-
-
 -- | Parses an @explode@ as defined by section 2.4.2 of the RFC.
 parseExplodeModifier :: Parser Modifier.Modifier
 parseExplodeModifier = Modifier.Asterisk <$ parseChar_ '*'
-
-
--- | Returns true if the given character is in the @literal@ range defined by
--- section 2.1 of the RFC.
-isLiteral :: Char -> Bool
-isLiteral x = case x of
-  ' ' -> False
-  '"' -> False
-  '\'' -> False
-  '%' -> False
-  '<' -> False
-  '>' -> False
-  '\\' -> False
-  '^' -> False
-  '`' -> False
-  '{' -> False
-  '|' -> False
-  '}' -> False
-  _ -> between '\x20' '\x7e' x || isUcschar x || isIprivate x
-
-
--- | Returns true if the given character is in the @ucschar@ range defined by
--- section 1.5 of the RFC.
-isUcschar :: Char -> Bool
-isUcschar x =
-  between '\xa0' '\xd7ff' x
-    || between '\xf900' '\xfdcf' x
-    || between '\xfdf0' '\xffef' x
-    || between '\x10000' '\x1fffd' x
-    || between '\x20000' '\x2fffd' x
-    || between '\x30000' '\x3fffd' x
-    || between '\x40000' '\x4fffd' x
-    || between '\x50000' '\x5fffd' x
-    || between '\x60000' '\x6fffd' x
-    || between '\x70000' '\x7fffd' x
-    || between '\x80000' '\x8fffd' x
-    || between '\x90000' '\x9fffd' x
-    || between '\xa0000' '\xafffd' x
-    || between '\xb0000' '\xbfffd' x
-    || between '\xc0000' '\xcfffd' x
-    || between '\xd0000' '\xdfffd' x
-    || between '\xe1000' '\xefffd' x
-
-
--- | Returns true if the given character is in the @iprivate@ range defined by
--- section 1.5 of the RFC.
-isIprivate :: Char -> Bool
-isIprivate x =
-  between '\xe000' '\xf8ff' x
-    || between '\xf0000' '\xffffd' x
-    || between '\x100000' '\x10fffd' x
-
-
--- | Returns true if the value is between the given inclusive bounds.
-between
-  :: Ord a
-  => a -- ^ lower bound
-  -> a -- ^ upper bound
-  -> a
-  -> Bool
-between lo hi x = lo <= x && x <= hi

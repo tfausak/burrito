@@ -1,8 +1,11 @@
 {-# LANGUAGE DeriveLift #-}
 
+-- | Warning: This module is not considered part of Burrito's public API. As
+-- such, it may change at any time. Use it with caution!.
 module Burrito.Type.Expression
   ( Expression(..)
-  ) where
+  )
+where
 
 import qualified Burrito.Type.NonEmpty as NonEmpty
 import qualified Burrito.Type.Operator as Operator

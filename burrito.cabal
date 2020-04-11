@@ -36,20 +36,14 @@ library
     base >= 4.12.0 && < 4.15
     , template-haskell >= 2.14.0 && < 2.17
   default-language: Haskell98
-  exposed-modules: Burrito
-  ghc-options:
-    -Weverything
-    -Wno-all-missed-specialisations
-    -Wno-implicit-prelude
-    -Wno-missing-exported-signatures
-    -Wno-safe
-  hs-source-dirs: src/lib
-  other-modules:
+  exposed-modules:
+    Burrito
     Burrito.Expand
     Burrito.Parse
+    Burrito.Render
     Burrito.TH
-    Burrito.Type.Character
     Burrito.Type.Expression
+    Burrito.Type.LitChar
     Burrito.Type.Literal
     Burrito.Type.Modifier
     Burrito.Type.Name
@@ -58,7 +52,15 @@ library
     Burrito.Type.Template
     Burrito.Type.Token
     Burrito.Type.Value
+    Burrito.Type.VarChar
     Burrito.Type.Variable
+  ghc-options:
+    -Weverything
+    -Wno-all-missed-specialisations
+    -Wno-implicit-prelude
+    -Wno-missing-exported-signatures
+    -Wno-safe
+  hs-source-dirs: src/lib
 
   if impl(ghc >= 8.8)
     ghc-options:
@@ -73,8 +75,8 @@ test-suite test
   build-depends:
     base -any
     , burrito -any
-    , HUnit >= 1.6.0 && < 1.7
-    , transformers >= 0.5.6 && < 0.6
+    , hspec >= 2.7.1 && < 2.8
+    , QuickCheck >= 2.13.2 && < 2.14
   default-language: Haskell98
   hs-source-dirs: src/test
   main-is: Main.hs

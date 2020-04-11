@@ -1,11 +1,14 @@
 {-# LANGUAGE DeriveLift #-}
 
+-- | Warning: This module is not considered part of Burrito's public API. As
+-- such, it may change at any time. Use it with caution!.
 module Burrito.Type.NonEmpty
   ( NonEmpty(..)
   , fromList
   , singleton
   , toList
-  ) where
+  )
+where
 
 import qualified Language.Haskell.TH.Syntax as TH
 
