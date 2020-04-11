@@ -356,18 +356,21 @@ parseMaxLength :: Parser Int
 parseMaxLength = do
   first <- parseNonZeroDigit
   rest <- parseUpTo 3 parseDigit
-  pure . fromDigits $ nonEmpty first rest
+  pure . fromDigits $ rest <> [first]
 
 
--- | Converts a list of digits into the number that they represent. For example
--- @[1, 2]@ becomes @12@.
-fromDigits :: NonEmpty.NonEmpty Int -> Int
-fromDigits = foldr1 ((+) . (10 *)) . NonEmpty.toList
+-- | Converts a backwards list of digits into the number that they represent.
+-- For example @[2, 1]@ becomes @12@.
+fromDigits :: [Int] -> Int
+fromDigits = foldr (\ digit -> (+ digit) . (* 10)) 0
 
 
 -- | Parses up to the given number of occurrences of the given parser. If the
 -- number is less than one, this will always succeed by returning the empty
 -- list.
+--
+-- Note that for performance reasons this returns the list in reverse order. If
+-- you need it in the order it was present in the input, use @reverse@.
 parseUpTo :: Int -> Parser a -> Parser [a]
 parseUpTo = parseUpToWith []
 
