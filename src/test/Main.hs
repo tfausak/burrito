@@ -9,25 +9,21 @@ module Main
 where
 
 import qualified Burrito
-import qualified Control.Monad as Monad
-import qualified Control.Monad.Trans.Writer as Writer
+import qualified GHC.Exts as Exts
 import qualified Data.Either as Either
 import qualified Data.String as String
-import qualified GHC.Exts as Exts
-import qualified GHC.Stack as Stack
-import qualified System.Exit as Exit
-import qualified Test.HUnit as Test
+import qualified Test.Hspec as Test
 
 main :: IO ()
-main = runTests $ do
+main = Test.hspec . Test.describe "Burrito" $ do
 
-  label "accepts empty templates" $ do
+  Test.it "accepts empty templates" $ do
     test "" [] ""
 
-  label "ignores extra variables" $ do
+  Test.it "ignores extra variables" $ do
     test "" ["extra" =: "ignored"] ""
 
-  label "accepts ascii literals" $ do
+  Test.it "accepts ascii literals" $ do
     test "!" [] "!"
     test "#" [] "#"
     test "$" [] "$"
@@ -56,7 +52,7 @@ main = runTests $ do
     test "z" [] "z"
     test "~" [] "~"
 
-  label "accepts unicode literals" $ do
+  Test.it "accepts unicode literals" $ do
     test "\xa0" [] "%C2%A0"
     test "\xd7ff" [] "%ED%9F%BF"
     test "\xf900" [] "%EF%A4%80"
@@ -92,7 +88,7 @@ main = runTests $ do
     test "\xe1000" [] "%F3%A1%80%80"
     test "\xefffd" [] "%F3%AF%BF%BD"
 
-  label "accepts private literals" $ do
+  Test.it "accepts private literals" $ do
     test "\xe000" [] "%EE%80%80"
     test "\xf8ff" [] "%EF%A3%BF"
     test "\xf0000" [] "%F3%B0%80%80"
@@ -100,25 +96,25 @@ main = runTests $ do
     test "\x100000" [] "%F4%80%80%80"
     test "\x10fffd" [] "%F4%8F%BF%BD"
 
-  label "passes percent encoded literals through" $ do
+  Test.it "passes percent encoded literals through" $ do
     test "%00" [] "%00"
 
-  label "normalizes percent encodings to uppercase" $ do
+  Test.it "normalizes percent encodings to uppercase" $ do
     test "%AA" [] "%AA"
     test "%Aa" [] "%AA"
     test "%aA" [] "%AA"
     test "%aa" [] "%AA"
 
-  label "rejects invalid percent encodings" $ do
+  Test.it "rejects invalid percent encodings" $ do
     test "%" [] Failure
     test "%0" [] Failure
     test "%0z" [] Failure
     test "%z" [] Failure
 
-  label "does not decode percent encoded literals" $ do
+  Test.it "does not decode percent encoded literals" $ do
     test "%30" [] "%30"
 
-  label "rejects invalid literals" $ do
+  Test.it "rejects invalid literals" $ do
     test " " [] Failure
     test "\"" [] Failure
     test "'" [] Failure
@@ -132,7 +128,7 @@ main = runTests $ do
     test "|" [] Failure
     test "}" [] Failure
 
-  label "rejects empty variable names" $ do
+  Test.it "rejects empty variable names" $ do
     test "{}" [] Failure
     test "{,}" [] Failure
     test "{a,,b}" [] Failure
@@ -140,34 +136,34 @@ main = runTests $ do
     test "{:1}" [] Failure
     test "{*}" [] Failure
 
-  label "accepts uppercase variable names" $ do
+  Test.it "accepts uppercase variable names" $ do
     test "{AZ}" [] ""
 
-  label "accepts lowercase variable names" $ do
+  Test.it "accepts lowercase variable names" $ do
     test "{az}" [] ""
 
-  label "accepts decimal variable names" $ do
+  Test.it "accepts decimal variable names" $ do
     test "{09}" [] ""
 
-  label "accepts underscores in variable names" $ do
+  Test.it "accepts underscores in variable names" $ do
     test "{_a}" [] ""
     test "{a_}" [] ""
     test "{_}" [] ""
 
-  label "accepts dots in variable names" $ do
+  Test.it "accepts dots in variable names" $ do
     test "{A.A}" [] ""
     test "{a.a}" [] ""
     test "{0.0}" [] ""
     test "{_._}" [] ""
     test "{%aa.%aa}" [] ""
 
-  label "rejects invalid dots in variable names" $ do
+  Test.it "rejects invalid dots in variable names" $ do
     test "{.}" [] Failure
     test "{a.}" [] Failure
     test "{+.a}" [] Failure
     test "{a..b}" [] Failure
 
-  label "accepts percent encoded variable names" $ do
+  Test.it "accepts percent encoded variable names" $ do
     test "{%00}" [] ""
 
   -- It's unclear if percent encoded triplets in variable names should be case
@@ -181,40 +177,40 @@ main = runTests $ do
   --
   -- However percent encoded triplets that only differ by case would be decoded
   -- into the same octet anyway.
-  label "does not normalize percent encoded variable names" $ do
+  Test.it "does not normalize percent encoded variable names" $ do
     test "{%AA}" ["%AA" =: "upper-upper"] "upper-upper"
     test "{%Aa}" ["%Aa" =: "upper-lower"] "upper-lower"
     test "{%aA}" ["%aA" =: "lower-upper"] "lower-upper"
     test "{%aa}" ["%aa" =: "lower-lower"] "lower-lower"
 
-  label "rejects invalid percent encoded variable names" $ do
+  Test.it "rejects invalid percent encoded variable names" $ do
     test "{%}" [] Failure
     test "{%0}" [] Failure
     test "{%0z}" [] Failure
     test "{%z}" [] Failure
 
-  label "rejects invalid variable names" $ do
+  Test.it "rejects invalid variable names" $ do
     test "{!}" [] Failure
 
-  label "rejects invalid expressions" $ do
+  Test.it "rejects invalid expressions" $ do
     test "{" [] Failure
     test "{{}" [] Failure
     test "}" [] Failure
     test "{}}" [] Failure
 
-  label "accepts multiple variables in one expression" $ do
+  Test.it "accepts multiple variables in one expression" $ do
     test "{a,b}" [] ""
     test "{a,b,c,d}" [] ""
     test "{a,a}" [] ""
 
-  label "accepts prefix modifiers" $ do
+  Test.it "accepts prefix modifiers" $ do
     test "{a:5}" [] ""
     test "{a:67}" [] ""
     test "{a:801}" [] ""
     test "{a:234}" [] ""
     test "{a:9999}" [] ""
 
-  label "applies prefix modifiers" $ do
+  Test.it "applies prefix modifiers" $ do
     let values = ["a" =: "abcdefghijklmnopqrstuvwxyz"] :: Values
     test "{a:1}" values "a"
     test "{a:5}" values "abcde"
@@ -224,23 +220,23 @@ main = runTests $ do
     test "{a:25}" values "abcdefghijklmnopqrstuvwxy"
     test "{a:30}" values "abcdefghijklmnopqrstuvwxyz"
 
-  label "rejects invalid prefix modifiers" $ do
+  Test.it "rejects invalid prefix modifiers" $ do
     test "{a:}" [] Failure
     test "{a:0}" [] Failure
     test "{a:10000}" [] Failure
     test "{a:-1}" [] Failure
 
-  label "accepts explode modifiers" $ do
+  Test.it "accepts explode modifiers" $ do
     test "{a*}" [] ""
 
-  label "rejects both prefix and explode modifiers" $ do
+  Test.it "rejects both prefix and explode modifiers" $ do
     test "{a:1*}" [] Failure
     test "{a*:1}" [] Failure
 
-  label "accepts different modifiers on different variables" $ do
+  Test.it "accepts different modifiers on different variables" $ do
     test "{a,b:1,c*}" [] ""
 
-  label "accepts allowed operators" $ do
+  Test.it "accepts allowed operators" $ do
     test "{+a}" [] ""
     test "{#a}" [] ""
     test "{.a}" [] ""
@@ -249,24 +245,24 @@ main = runTests $ do
     test "{?a}" [] ""
     test "{&a}" [] ""
 
-  label "rejects reserved operators" $ do
+  Test.it "rejects reserved operators" $ do
     test "{=a}" [] Failure
     test "{,a}" [] Failure
     test "{!a}" [] Failure
     test "{@a}" [] Failure
     test "{|a}" [] Failure
 
-  label "rejects multiple operators" $ do
+  Test.it "rejects multiple operators" $ do
     test "{+#a}" [] Failure
 
-  label "rejects different operators for different variables" $ do
+  Test.it "rejects different operators for different variables" $ do
     test "{+a,#b}" [] Failure
 
-  label "accepts operators and modifiers" $ do
+  Test.it "accepts operators and modifiers" $ do
     test "{+a:1}" [] ""
     test "{#a*}" [] ""
 
-  label "accepts multiple variables with an operator" $ do
+  Test.it "accepts multiple variables with an operator" $ do
     test "{+a,b}" [] ""
     test "{#a,b}" [] ""
     test "{.a,b}" [] ""
@@ -275,24 +271,24 @@ main = runTests $ do
     test "{?a,b}" [] ""
     test "{&a,b}" [] ""
 
-  label "accepts multiple expressions" $ do
+  Test.it "accepts multiple expressions" $ do
     test "{a}{b}" [] ""
     test "{a}{b}{c}{d}" [] ""
     test "{a}{a}" [] ""
 
-  label "rejects nested expressions" $ do
+  Test.it "rejects nested expressions" $ do
     test "{{}}" [] Failure
     test "{a{b}}" [] Failure
     test "{{a}b}" [] Failure
     test "{a{b}c}" [] Failure
 
-  label "accepts literals and expressions together" $ do
+  Test.it "accepts literals and expressions together" $ do
     test "a{b}" [] "a"
     test "{a}b" [] "b"
     test "a{b}c" [] "ac"
     test "{a}b{c}" [] "b"
 
-  label "handles missing values" $ do
+  Test.it "handles missing values" $ do
     test "{a}" [] ""
     test "{+a}" [] ""
     test "{#a}" [] ""
@@ -302,7 +298,7 @@ main = runTests $ do
     test "{?a}" [] ""
     test "{&a}" [] ""
 
-  label "handles empty list values" $ do
+  Test.it "handles empty list values" $ do
     let values = ["a" =: emptyList] :: Values
     test "{a}" values ""
     test "{+a}" values ""
@@ -313,7 +309,7 @@ main = runTests $ do
     test "{?a}" values ""
     test "{&a}" values ""
 
-  label "handles empty dictionary values" $ do
+  Test.it "handles empty dictionary values" $ do
     let values = ["a" =: emptyDictionary] :: Values
     test "{a}" values ""
     test "{+a}" values ""
@@ -324,7 +320,7 @@ main = runTests $ do
     test "{?a}" values ""
     test "{&a}" values ""
 
-  label "handles empty string values" $ do
+  Test.it "handles empty string values" $ do
     let values = ["a" =: ""] :: Values
     test "{a}" values ""
     test "{+a}" values ""
@@ -335,7 +331,7 @@ main = runTests $ do
     test "{?a}" values "?a="
     test "{&a}" values "&a="
 
-  label "handles nonempty string values" $ do
+  Test.it "handles nonempty string values" $ do
     let values = ["a" =: "A"] :: Values
     test "{a}" values "A"
     test "{+a}" values "A"
@@ -346,7 +342,7 @@ main = runTests $ do
     test "{?a}" values "?a=A"
     test "{&a}" values "&a=A"
 
-  label "handles a mix of defined and undefined values" $ do
+  Test.it "handles a mix of defined and undefined values" $ do
     let values = ["b" =: "B"] :: Values
     test "{a,b}" values "B"
     test "{+a,b}" values "B"
@@ -357,7 +353,7 @@ main = runTests $ do
     test "{?a,b}" values "?b=B"
     test "{&a,b}" values "&b=B"
 
-  label "handles multiple empty string values" $ do
+  Test.it "handles multiple empty string values" $ do
     let values = ["a" =: ""] :: Values
     test "{a,a}" values ","
     test "{+a,a}" values ","
@@ -368,7 +364,7 @@ main = runTests $ do
     test "{?a,a}" values "?a=&a="
     test "{&a,a}" values "&a=&a="
 
-  label "handles multiple non-empty string values" $ do
+  Test.it "handles multiple non-empty string values" $ do
     let values = ["a" =: "A", "b" =: "B"] :: Values
     test "{a,b}" values "A,B"
     test "{+a,b}" values "A,B"
@@ -379,7 +375,7 @@ main = runTests $ do
     test "{?a,b}" values "?a=A&b=B"
     test "{&a,b}" values "&a=A&b=B"
 
-  label "escapes characters in composite dictionaries" $ do
+  Test.it "escapes characters in composite dictionaries" $ do
     let values = ["a" =: ["K! \xa0\xd7ff\x10000" =: "V! \xa0\xd7ff\x10000"]] :: Values
     test "{a*}" values "K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80"
     test "{+a*}" values "K!%20%C2%A0%ED%9F%BF%F0%90%80%80=V!%20%C2%A0%ED%9F%BF%F0%90%80%80"
@@ -390,13 +386,13 @@ main = runTests $ do
     test "{?a*}" values "?K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80"
     test "{&a*}" values "&K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80"
 
-  label "prefers the first variable" $ do
+  Test.it "prefers the first variable" $ do
     test "{a}" ["a" =: "A", "a" =: "B"] "A"
     test "{a}" ["a" =: "B", "a" =: "A"] "B"
 
-  label "passes test from rfc" $ do
+  Test.describe "passes test from rfc" $ do
 
-    label "section 1.1" $ do
+    Test.it "section 1.1" $ do
       test "http://example.com/~{username}/" ["username" =: "fred"] "http://example.com/~fred/"
       test "http://example.com/~{username}/" ["username" =: "mark"] "http://example.com/~mark/"
       test "http://example.com/dictionary/{term:1}/{term}" ["term" =: "cat"] "http://example.com/dictionary/c/cat"
@@ -407,7 +403,7 @@ main = runTests $ do
       test "http://www.example.com/foo{?query,number}" ["number" =: "100"] "http://www.example.com/foo?number=100"
       test "http://www.example.com/foo{?query,number}" [] "http://www.example.com/foo"
 
-    label "section 1.2" $ do
+    Test.describe "section 1.2" $ do
       let
         values =
           [ "empty" =: ""
@@ -420,11 +416,11 @@ main = runTests $ do
           , "y" =: "768"
           ] :: Values
 
-      label "level 1" $ do
+      Test.it "level 1" $ do
         test "{var}" values "value"
         test "{hello}" values "Hello%20World%21"
 
-      label "level 2" $ do
+      Test.it "level 2" $ do
         test "{+var}" values "value"
         test "{+hello}" values "Hello%20World!"
         test "{+path}/here" values "/foo/bar/here"
@@ -432,7 +428,7 @@ main = runTests $ do
         test "X{#var}" values "X#value"
         test "X{#hello}" values "X#Hello%20World!"
 
-      label "level 3" $ do
+      Test.it "level 3" $ do
         test "map?{x,y}" values "map?1024,768"
         test "{x,hello,y}" values "1024,Hello%20World%21,768"
         test "{+x,hello,y}" values "1024,Hello%20World!,768"
@@ -450,7 +446,7 @@ main = runTests $ do
         test "?fixed=yes{&x}" values "?fixed=yes&x=1024"
         test "{&x,y,empty}" values "&x=1024&y=768&empty="
 
-      label "level 4" $ do
+      Test.it "level 4" $ do
         test "{var:3}" values "val"
         test "{var:30}" values "value"
         test "{list}" values "red,green,blue"
@@ -494,7 +490,7 @@ main = runTests $ do
         test "{&keys}" values "&keys=semi,%3B,dot,.,comma,%2C"
         test "{&keys*}" values "&semi=%3B&dot=.&comma=%2C"
 
-    label "section 2.4.1" $ do
+    Test.it "section 2.4.1" $ do
       let values = ["var" =: "value", "semi" =: ";"] :: Values
       test "{var}" values "value"
       test "{var:20}" values "value"
@@ -502,12 +498,12 @@ main = runTests $ do
       test "{semi}" values "%3B"
       test "{semi:2}" values "%3B"
 
-    label "section 2.4.2" $ do
+    Test.it "section 2.4.2" $ do
       let values = ["year" =: ["1965", "2000", "2012"], "dom" =: ["example", "com"]] :: Values
       test "find{?year*}" values "find?year=1965&year=2000&year=2012"
       test "www{.dom*}" values "www.example.com"
 
-    label "section 3.1" $ do
+    Test.describe "section 3.1" $ do
       let
         values =
           [ "base" =: "http://example.com/home/"
@@ -528,7 +524,7 @@ main = runTests $ do
           , "y" =: "768"
           ] :: Values
 
-      label "subsection 1" $ do
+      Test.it "subsection 1" $ do
         test "{count}" values "one,two,three"
         test "{count*}" values "one,two,three"
         test "{/count}" values "/one,two,three"
@@ -539,7 +535,7 @@ main = runTests $ do
         test "{?count*}" values "?count=one&count=two&count=three"
         test "{&count*}" values "&count=one&count=two&count=three"
 
-      label "subsection 2" $ do
+      Test.it "subsection 2" $ do
         test "{var}" values "value"
         test "{hello}" values "Hello%20World%21"
         test "{half}" values "50%25"
@@ -557,7 +553,7 @@ main = runTests $ do
         test "{keys}" values "semi,%3B,dot,.,comma,%2C"
         test "{keys*}" values "semi=%3B,dot=.,comma=%2C"
 
-      label "subsection 3" $ do
+      Test.it "subsection 3" $ do
         test "{+var}" values "value"
         test "{+hello}" values "Hello%20World!"
         test "{+half}" values "50%25"
@@ -576,7 +572,7 @@ main = runTests $ do
         test "{+keys}" values "semi,;,dot,.,comma,,"
         test "{+keys*}" values "semi=;,dot=.,comma=,"
 
-      label "subsection 4" $ do
+      Test.it "subsection 4" $ do
         test "{#var}" values "#value"
         test "{#hello}" values "#Hello%20World!"
         test "{#half}" values "#50%25"
@@ -590,7 +586,7 @@ main = runTests $ do
         test "{#keys}" values "#semi,;,dot,.,comma,,"
         test "{#keys*}" values "#semi=;,dot=.,comma=,"
 
-      label "subsection 5" $ do
+      Test.it "subsection 5" $ do
         test "{.who}" values ".fred"
         test "{.who,who}" values ".fred.fred"
         test "{.half,who}" values ".50%25.fred"
@@ -606,7 +602,7 @@ main = runTests $ do
         test "X{.empty_keys}" values "X"
         test "X{.empty_keys*}" values "X"
 
-      label "subsection 6" $ do
+      Test.it "subsection 6" $ do
         test "{/who}" values "/fred"
         test "{/who,who}" values "/fred/fred"
         test "{/half,who}" values "/50%25/fred"
@@ -622,7 +618,7 @@ main = runTests $ do
         test "{/keys}" values "/semi,%3B,dot,.,comma,%2C"
         test "{/keys*}" values "/semi=%3B/dot=./comma=%2C"
 
-      label "subsection 7" $ do
+      Test.it "subsection 7" $ do
         test "{;who}" values ";who=fred"
         test "{;half}" values ";half=50%25"
         test "{;empty}" values ";empty"
@@ -637,7 +633,7 @@ main = runTests $ do
         test "{;keys}" values ";keys=semi,%3B,dot,.,comma,%2C"
         test "{;keys*}" values ";semi=%3B;dot=.;comma=%2C"
 
-      label "subsection 8" $ do
+      Test.it "subsection 8" $ do
         test "{?who}" values "?who=fred"
         test "{?half}" values "?half=50%25"
         test "{?x,y}" values "?x=1024&y=768"
@@ -649,7 +645,7 @@ main = runTests $ do
         test "{?keys}" values "?keys=semi,%3B,dot,.,comma,%2C"
         test "{?keys*}" values "?semi=%3B&dot=.&comma=%2C"
 
-      label "subsection 9" $ do
+      Test.it "subsection 9" $ do
         test "{&who}" values "&who=fred"
         test "{&half}" values "&half=50%25"
         test "?fixed=yes{&x}" values "?fixed=yes&x=1024"
@@ -661,7 +657,7 @@ main = runTests $ do
         test "{&keys}" values "&keys=semi,%3B,dot,.,comma,%2C"
         test "{&keys*}" values "&semi=%3B&dot=.&comma=%2C"
 
-  label "handles simple expansion" $ do
+  Test.it "handles simple expansion" $ do
     test "{a}" [] ""
     test "{a}" ["a" =: emptyList] ""
     test "{a}" ["a" =: emptyDictionary] ""
@@ -719,7 +715,7 @@ main = runTests $ do
     test "{%aa*}" ["%aa" =: ["A", "B"]] "A,B"
     test "{%aa*}" ["%aa" =: ["A" =: "1", "B" =: "2"]] "A=1,B=2"
 
-  label "handles reserved expansion" $ do
+  Test.it "handles reserved expansion" $ do
     test "{+a}" [] ""
     test "{+a}" ["a" =: emptyList] ""
     test "{+a}" ["a" =: emptyDictionary] ""
@@ -777,7 +773,7 @@ main = runTests $ do
     test "{+%aa*}" ["%aa" =: ["A", "B"]] "A,B"
     test "{+%aa*}" ["%aa" =: ["A" =: "1", "B" =: "2"]] "A=1,B=2"
 
-  label "handles fragment expansion" $ do
+  Test.it "handles fragment expansion" $ do
     test "{#a}" [] ""
     test "{#a}" ["a" =: emptyList] ""
     test "{#a}" ["a" =: emptyDictionary] ""
@@ -835,7 +831,7 @@ main = runTests $ do
     test "{#%aa*}" ["%aa" =: ["A", "B"]] "#A,B"
     test "{#%aa*}" ["%aa" =: ["A" =: "1", "B" =: "2"]] "#A=1,B=2"
 
-  label "handles label expansion" $ do
+  Test.it "handles Test.it expansion" $ do
     test "{.a}" [] ""
     test "{.a}" ["a" =: emptyList] ""
     test "{.a}" ["a" =: emptyDictionary] ""
@@ -893,7 +889,7 @@ main = runTests $ do
     test "{.%aa*}" ["%aa" =: ["A", "B"]] ".A.B"
     test "{.%aa*}" ["%aa" =: ["A" =: "1", "B" =: "2"]] ".A=1.B=2"
 
-  label "handles segment expansion" $ do
+  Test.it "handles segment expansion" $ do
     test "{/a}" [] ""
     test "{/a}" ["a" =: emptyList] ""
     test "{/a}" ["a" =: emptyDictionary] ""
@@ -951,7 +947,7 @@ main = runTests $ do
     test "{/%aa*}" ["%aa" =: ["A", "B"]] "/A/B"
     test "{/%aa*}" ["%aa" =: ["A" =: "1", "B" =: "2"]] "/A=1/B=2"
 
-  label "handles parameter expansion" $ do
+  Test.it "handles parameter expansion" $ do
     test "{;a}" [] ""
     test "{;a}" ["a" =: emptyList] ""
     test "{;a}" ["a" =: emptyDictionary] ""
@@ -1009,7 +1005,7 @@ main = runTests $ do
     test "{;%aa*}" ["%aa" =: ["A", "B"]] ";%aa=A;%aa=B"
     test "{;%aa*}" ["%aa" =: ["A" =: "1", "B" =: "2"]] ";A=1;B=2"
 
-  label "handles query expansion" $ do
+  Test.it "handles query expansion" $ do
     test "{?a}" [] ""
     test "{?a}" ["a" =: emptyList] ""
     test "{?a}" ["a" =: emptyDictionary] ""
@@ -1067,7 +1063,7 @@ main = runTests $ do
     test "{?%aa*}" ["%aa" =: ["A", "B"]] "?%aa=A&%aa=B"
     test "{?%aa*}" ["%aa" =: ["A" =: "1", "B" =: "2"]] "?A=1&B=2"
 
-  label "handles continuation expansion" $ do
+  Test.it "handles continuation expansion" $ do
     test "{&a}" [] ""
     test "{&a}" ["a" =: emptyList] ""
     test "{&a}" ["a" =: emptyDictionary] ""
@@ -1125,9 +1121,10 @@ main = runTests $ do
     test "{&%aa*}" ["%aa" =: ["A", "B"]] "&%aa=A&%aa=B"
     test "{&%aa*}" ["%aa" =: ["A" =: "1", "B" =: "2"]] "&A=1&B=2"
 
-  label "supports quasi quotes" $ do
-    label "as expressions" $ do
-      let qq x y = Writer.tell . Test $ Just x Test.~?= Burrito.parse y
+  Test.describe "supports quasi quotes" $ do
+
+    Test.it "as expressions" $ do
+      let qq x y = Just x `Test.shouldBe` Burrito.parse y
       qq [Burrito.uriTemplate||] ""
       qq [Burrito.uriTemplate|a|] "a"
       qq [Burrito.uriTemplate|%00|] "%00"
@@ -1144,52 +1141,14 @@ main = runTests $ do
       qq [Burrito.uriTemplate|{?a}|] "{?a}"
       qq [Burrito.uriTemplate|{&a}|] "{&a}"
 
-runTests :: Writer.WriterT Test IO a -> IO ()
-runTests writer = do
-  tests <- Writer.execWriterT writer
-  counts <- Test.runTestTT $ unwrapTest tests
-  let
-    hasErrors = Test.errors counts /= 0
-    hasFailures = Test.failures counts /= 0
-  Monad.when (hasErrors || hasFailures) Exit.exitFailure
-
-label
-  :: Monad m
-  => String
-  -> Writer.WriterT Test m a
-  -> Writer.WriterT Test m a
-label string = Writer.censor $ \tests -> Test $ string Test.~: tests
-
 test
-  :: (Stack.HasCallStack, Monad m)
-  => String -- ^ A string to parse as a URI template ('Burrito.parse')
-  -> Values -- ^ Values to feed into the template ('Burrito.expand')
-  -> Expected -- ^ The URI that should result
-  -> Writer.WriterT Test m ()
-test input values output = do
-  let expand = Burrito.expand $ fmap (fmap unwrapValue) values
-  Writer.tell
-    . Test
-    $ input
-    Test.~: fmap expand (Burrito.parse input)
-    Test.~?= expectedToMaybe output
-
-newtype Test = Test
-  { unwrapTest :: Test.Test
-  } deriving (Show)
-
-instance Monoid Test where
-  mempty = Test $ Test.TestList []
-
-instance Semigroup Test where
-  x <> y = Test . Test.TestList $ case (unwrapTest x, unwrapTest y) of
-    (Test.TestList t, Test.TestList u) -> t <> u
-    (Test.TestList t, u) -> t <> [u]
-    (t, Test.TestList u) -> t : u
-    (t, u) -> [t, u]
-
-instance Test.Testable Test where
-  test = unwrapTest
+  :: String
+  -> Values
+  -> Expected
+  -> IO ()
+test input values output =
+  fmap (Burrito.expand (fmap (fmap unwrapValue) values)) (Burrito.parse input)
+  `Test.shouldBe` expectedToMaybe output
 
 data Expected
   = Failure

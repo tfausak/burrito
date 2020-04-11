@@ -73,8 +73,7 @@ test-suite test
   build-depends:
     base -any
     , burrito -any
-    , HUnit >= 1.6.0 && < 1.7
-    , transformers >= 0.5.6 && < 0.6
+    , hspec >= 2.7.1 && < 2.8
   default-language: Haskell98
   hs-source-dirs: src/test
   main-is: Main.hs
