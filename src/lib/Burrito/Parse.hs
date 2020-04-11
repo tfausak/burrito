@@ -171,7 +171,7 @@ parseCharacter = parseEither parseCharacterUnencoded parseCharacterEncoded
 
 -- | Parses an unencoded character in a literal.
 parseCharacterUnencoded :: Parser Character.Character
-parseCharacterUnencoded = Character.Unencoded <$> parseIf isLiteral
+parseCharacterUnencoded = Character.Unencoded <$> parseIf Character.isLiteral
 
 
 -- | Parses a percent-encoded character in a literal.
@@ -348,7 +348,8 @@ parseModifier =
 parsePrefixModifier :: Parser Modifier.Modifier
 parsePrefixModifier = do
   parseChar_ ':'
-  Modifier.Colon <$> parseMaxLength
+  maxLength <- parseMaxLength
+  maybe Applicative.empty pure $ Modifier.makeColon maxLength
 
 
 -- | Parses a @max-length@ as defined by section 2.4.1 of the RFC.
@@ -414,64 +415,3 @@ isAlpha x = Char.isAsciiUpper x || Char.isAsciiLower x
 -- | Parses an @explode@ as defined by section 2.4.2 of the RFC.
 parseExplodeModifier :: Parser Modifier.Modifier
 parseExplodeModifier = Modifier.Asterisk <$ parseChar_ '*'
-
-
--- | Returns true if the given character is in the @literal@ range defined by
--- section 2.1 of the RFC.
-isLiteral :: Char -> Bool
-isLiteral x = case x of
-  ' ' -> False
-  '"' -> False
-  '\'' -> False
-  '%' -> False
-  '<' -> False
-  '>' -> False
-  '\\' -> False
-  '^' -> False
-  '`' -> False
-  '{' -> False
-  '|' -> False
-  '}' -> False
-  _ -> between '\x20' '\x7e' x || isUcschar x || isIprivate x
-
-
--- | Returns true if the given character is in the @ucschar@ range defined by
--- section 1.5 of the RFC.
-isUcschar :: Char -> Bool
-isUcschar x =
-  between '\xa0' '\xd7ff' x
-    || between '\xf900' '\xfdcf' x
-    || between '\xfdf0' '\xffef' x
-    || between '\x10000' '\x1fffd' x
-    || between '\x20000' '\x2fffd' x
-    || between '\x30000' '\x3fffd' x
-    || between '\x40000' '\x4fffd' x
-    || between '\x50000' '\x5fffd' x
-    || between '\x60000' '\x6fffd' x
-    || between '\x70000' '\x7fffd' x
-    || between '\x80000' '\x8fffd' x
-    || between '\x90000' '\x9fffd' x
-    || between '\xa0000' '\xafffd' x
-    || between '\xb0000' '\xbfffd' x
-    || between '\xc0000' '\xcfffd' x
-    || between '\xd0000' '\xdfffd' x
-    || between '\xe1000' '\xefffd' x
-
-
--- | Returns true if the given character is in the @iprivate@ range defined by
--- section 1.5 of the RFC.
-isIprivate :: Char -> Bool
-isIprivate x =
-  between '\xe000' '\xf8ff' x
-    || between '\xf0000' '\xffffd' x
-    || between '\x100000' '\x10fffd' x
-
-
--- | Returns true if the value is between the given inclusive bounds.
-between
-  :: Ord a
-  => a -- ^ lower bound
-  -> a -- ^ upper bound
-  -> a
-  -> Bool
-between lo hi x = lo <= x && x <= hi

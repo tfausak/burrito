@@ -1322,48 +1322,8 @@ instance QC.Arbitrary Literal.Literal where
 instance QC.Arbitrary Character.Character where
   arbitrary = QC.oneof
     [ Character.Encoded <$> QC.arbitrary
-    , Character.Unencoded <$> arbitraryLiteralChar
+    , Character.Unencoded <$> QC.suchThat QC.arbitrary Character.isLiteral
     ]
   shrink character = case character of
     Character.Encoded word8 -> Character.Encoded <$> QC.shrink word8
-    Character.Unencoded char -> fmap Character.Unencoded . filter isLiteralChar $ QC.shrink char
-
--- TODO: deduplicate with `isLiteral`
-arbitraryLiteralChar :: QC.Gen Char
-arbitraryLiteralChar = QC.suchThat QC.arbitrary isLiteralChar
-
-isLiteralChar :: Char -> Bool
-isLiteralChar x = case x of
-  ' ' -> False
-  '"' -> False
-  '\'' -> False
-  '%' -> False
-  '<' -> False
-  '>' -> False
-  '\\' -> False
-  '^' -> False
-  '`' -> False
-  '{' -> False
-  '|' -> False
-  '}' -> False
-  _ -> '\x20' <= x && x <= '\x7e'
-    || '\xa0' <= x && x <= '\xd7ff'
-    || '\xf900' <= x && x <= '\xfdcf'
-    || '\xfdf0' <= x && x <= '\xffef'
-    || '\x10000' <= x && x <= '\x1fffd'
-    || '\x20000' <= x && x <= '\x2fffd'
-    || '\x30000' <= x && x <= '\x3fffd'
-    || '\x40000' <= x && x <= '\x4fffd'
-    || '\x50000' <= x && x <= '\x5fffd'
-    || '\x60000' <= x && x <= '\x6fffd'
-    || '\x70000' <= x && x <= '\x7fffd'
-    || '\x80000' <= x && x <= '\x8fffd'
-    || '\x90000' <= x && x <= '\x9fffd'
-    || '\xa0000' <= x && x <= '\xafffd'
-    || '\xb0000' <= x && x <= '\xbfffd'
-    || '\xc0000' <= x && x <= '\xcfffd'
-    || '\xd0000' <= x && x <= '\xdfffd'
-    || '\xe1000' <= x && x <= '\xefffd'
-    || '\xe000' <= x && x <= '\xf8ff'
-    || '\xf0000' <= x && x <= '\xffffd'
-    || '\x100000' <= x && x <= '\x10fffd'
+    Character.Unencoded char -> fmap Character.Unencoded . filter Character.isLiteral $ QC.shrink char
