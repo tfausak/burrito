@@ -11,7 +11,7 @@ module Main
 where
 
 import qualified Burrito
-import qualified Burrito.Type.Character as Character
+import qualified Burrito.Type.LitChar as LitChar
 import qualified Burrito.Type.Expression as Expression
 import qualified Burrito.Type.Literal as Literal
 import qualified Burrito.Type.Modifier as Modifier
@@ -1316,13 +1316,13 @@ instance QC.Arbitrary Literal.Literal where
   arbitrary = Literal.Literal <$> QC.arbitrary
   shrink = fmap Literal.Literal . QC.shrink . Literal.characters
 
-instance QC.Arbitrary Character.Character where
+instance QC.Arbitrary LitChar.LitChar where
   arbitrary = QC.oneof
-    [ Character.Encoded <$> QC.arbitrary
+    [ LitChar.Encoded <$> QC.arbitrary
     , do
-      char <- QC.suchThat QC.arbitrary Character.isLiteral
-      maybe QC.discard pure $ Character.makeUnencoded char
+      char <- QC.suchThat QC.arbitrary LitChar.isLiteral
+      maybe QC.discard pure $ LitChar.makeUnencoded char
     ]
   shrink character = case character of
-    Character.Encoded word8 -> Character.Encoded <$> QC.shrink word8
-    Character.Unencoded char -> Maybe.mapMaybe Character.makeUnencoded $ QC.shrink char
+    LitChar.Encoded word8 -> LitChar.Encoded <$> QC.shrink word8
+    LitChar.Unencoded char -> Maybe.mapMaybe LitChar.makeUnencoded $ QC.shrink char

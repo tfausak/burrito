@@ -4,8 +4,8 @@ module Burrito.Parse
   ( parse
   ) where
 
-import qualified Burrito.Type.Character as Character
 import qualified Burrito.Type.Expression as Expression
+import qualified Burrito.Type.LitChar as LitChar
 import qualified Burrito.Type.Literal as Literal
 import qualified Burrito.Type.Modifier as Modifier
 import qualified Burrito.Type.Name as Name
@@ -165,22 +165,22 @@ parseLiteral = Literal.Literal <$> parseNonEmpty parseCharacter
 
 
 -- | Parses a character in a literal.
-parseCharacter :: Parser Character.Character
+parseCharacter :: Parser LitChar.LitChar
 parseCharacter = parseEither parseCharacterUnencoded parseCharacterEncoded
 
 
 -- | Parses an unencoded character in a literal.
-parseCharacterUnencoded :: Parser Character.Character
+parseCharacterUnencoded :: Parser LitChar.LitChar
 parseCharacterUnencoded = do
-  char <- parseIf Character.isLiteral
-  maybe Applicative.empty pure $ Character.makeUnencoded char
+  char <- parseIf LitChar.isLiteral
+  maybe Applicative.empty pure $ LitChar.makeUnencoded char
 
 
 -- | Parses a percent-encoded character in a literal.
-parseCharacterEncoded :: Parser Character.Character
+parseCharacterEncoded :: Parser LitChar.LitChar
 parseCharacterEncoded = do
   (hi, lo) <- parsePercentEncoded
-  pure . Character.Encoded $ intToWord8
+  pure . LitChar.Encoded $ intToWord8
     (Char.digitToInt hi * 16 + Char.digitToInt lo)
 
 

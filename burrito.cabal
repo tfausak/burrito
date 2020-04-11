@@ -42,8 +42,8 @@ library
     Burrito.Parse
     Burrito.Render
     Burrito.TH
-    Burrito.Type.Character
     Burrito.Type.Expression
+    Burrito.Type.LitChar
     Burrito.Type.Literal
     Burrito.Type.Modifier
     Burrito.Type.Name

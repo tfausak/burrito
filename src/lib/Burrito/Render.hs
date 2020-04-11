@@ -5,8 +5,8 @@ module Burrito.Render
   )
 where
 
-import qualified Burrito.Type.Character as Character
 import qualified Burrito.Type.Expression as Expression
+import qualified Burrito.Type.LitChar as LitChar
 import qualified Burrito.Type.Literal as Literal
 import qualified Burrito.Type.Modifier as Modifier
 import qualified Burrito.Type.Name as Name
@@ -88,10 +88,10 @@ renderLiteral = concatMap renderCharacter . NonEmpty.toList . Literal.characters
 
 
 -- | Renders a character in a literal token.
-renderCharacter :: Character.Character -> String
+renderCharacter :: LitChar.LitChar -> String
 renderCharacter character = case character of
-  Character.Encoded word8 -> renderEncodedCharacter word8
-  Character.Unencoded char -> renderUnencodedCharacter char
+  LitChar.Encoded word8 -> renderEncodedCharacter word8
+  LitChar.Unencoded char -> renderUnencodedCharacter char
 
 
 -- | Renders an encoded character by percent encoding it with uppercase

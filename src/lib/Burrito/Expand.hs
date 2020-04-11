@@ -4,8 +4,8 @@ module Burrito.Expand
   ( expand
   ) where
 
-import qualified Burrito.Type.Character as Character
 import qualified Burrito.Type.Expression as Expression
+import qualified Burrito.Type.LitChar as LitChar
 import qualified Burrito.Type.Literal as Literal
 import qualified Burrito.Type.Modifier as Modifier
 import qualified Burrito.Type.Name as Name
@@ -62,10 +62,10 @@ expandLiteral = concatMap expandCharacter . NonEmpty.toList . Literal.characters
 -- | Expands a single literal character for output. This is necessary to
 -- normalize percent encodings and to encode characters that aren't allowed to
 -- appear in URIs.
-expandCharacter :: Character.Character -> String
+expandCharacter :: LitChar.LitChar -> String
 expandCharacter character = case character of
-  Character.Encoded word8 -> percentEncodeWord8 word8
-  Character.Unencoded char -> escapeChar Operator.PlusSign char
+  LitChar.Encoded word8 -> percentEncodeWord8 word8
+  LitChar.Unencoded char -> escapeChar Operator.PlusSign char
 
 
 -- | If necessary, escapes a character for output with the given operator.
