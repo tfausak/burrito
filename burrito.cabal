@@ -47,6 +47,7 @@ library
   other-modules:
     Burrito.Expand
     Burrito.Parse
+    Burrito.Render
     Burrito.TH
     Burrito.Type.Character
     Burrito.Type.Expression
