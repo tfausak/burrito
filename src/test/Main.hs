@@ -22,9 +22,7 @@ import qualified Burrito.Internal.Type.Operator as Operator
 import qualified Burrito.Internal.Type.Template as Template
 import qualified Burrito.Internal.Type.Token as Token
 import qualified Burrito.Internal.Type.Variable as Variable
-import qualified Data.Map as Map
 import qualified Data.String as String
-import qualified Data.Text as Text
 import qualified Test.Hspec as Hspec
 import qualified Test.Hspec.QuickCheck as Hspec
 import qualified Test.QuickCheck as QC
@@ -43,13 +41,19 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
 
     matchTest "" [] ""
     matchTest "a" [] "a"
+    matchTest "!" [] "!"
+    matchTest "\xa0" [] "%C2%A0"
     matchTest "{a}" ["a" =: s ""] ""
     matchTest "{a}" ["a" =: s "A"] "A"
+    matchTest "{a}" ["a" =: s "AB"] "AB"
     matchTest "a{b}" ["b" =: s ""] "a"
     matchTest "a{b}" ["b" =: s "B"] "aB"
+    matchTest "a{b}" ["b" =: s "BC"] "aBC"
     matchTest "{a}b" ["a" =: s ""] "b"
     matchTest "{a}b" ["a" =: s "A"] "Ab"
+    matchTest "{a}b" ["a" =: s "AB"] "ABb"
     matchTest "{a}{a}" ["a" =: s "A"] "AA"
+    matchTest "{a}{a}" ["a" =: s "AB"] "ABAB"
 
     -- TODO: Test matching on encoded characters.
     -- matchTest "{a}" ["a" =: s "/"] "%2F"
@@ -57,8 +61,11 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     -- TODO: Test matching on operators.
     -- matchTest "{+a}" ["a" =: s "/"] "/"
 
-    -- TODO: Test matching multiple operators in one expression.
+    -- TODO: Test matching multiple variables in one expression.
     -- matchTest "{a,a}" ["a" =: s "A"] "A,A"
+
+    -- TODO: Test matching on modifiers.
+    -- matchTest "{a*}" ["a" =: s "A"] "A"
 
     -- TODO: Enhance normal tests to round-trip matching.
 
@@ -723,7 +730,7 @@ tests = mconcat
       , Test "{%Aa}" values "2"
       , Test "{%aA}" values "3"
       , Test "{%aa}" values "4"
-      -- This comment forces Brittany to use a multi-line layout.
+          -- This comment forces Brittany to use a multi-line layout.
       ]
   , let values = ["a" =: s "abcdefghijklmnopqrstuvwxyz"]
     in
@@ -910,13 +917,13 @@ tests = mconcat
       , Test "{var:3}" values "val"
       , Test "{semi}" values "%3B"
       , Test "{semi:2}" values "%3B"
-      -- This comment forces Brittany to use a multi-line layout.
+          -- This comment forces Brittany to use a multi-line layout.
       ]
   , let values = ["year" =: l ["1965", "2000", "2012"], "dom" =: l ["example", "com"]]
     in
       [ Test "find{?year*}" values "find?year=1965&year=2000&year=2012"
       , Test "www{.dom*}" values "www.example.com"
-      -- This comment forces Brittany to use a multi-line layout.
+          -- This comment forces Brittany to use a multi-line layout.
       ]
   , let
       values =
@@ -1192,7 +1199,8 @@ shrinkVariable variable = uncurry Variable.Variable <$> shrinkTuple
   (Variable.name variable, Variable.modifier variable)
 
 shrinkTuple :: Shrink a -> Shrink b -> Shrink (a, b)
-shrinkTuple f g (x, y) = fmap (flip (,) y) (f x) <> fmap ((,) x) (g y)
+shrinkTuple f g (x, y) =
+  fmap (\a -> (a, y)) (f x) <> fmap (\b -> (x, b)) (g y)
 
 arbitraryName :: QC.Gen Name.Name
 arbitraryName = Name.Name <$> arbitraryNonEmpty arbitraryField

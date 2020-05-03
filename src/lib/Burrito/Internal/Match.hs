@@ -7,6 +7,7 @@ import qualified Burrito.Internal.Type.Character as Character
 import qualified Burrito.Internal.Type.Digit as Digit
 import qualified Burrito.Internal.Type.Expression as Expression
 import qualified Burrito.Internal.Type.Literal as Literal
+import qualified Burrito.Internal.Type.Modifier as Modifier
 import qualified Burrito.Internal.Type.NonEmpty as NonEmpty
 import qualified Burrito.Internal.Type.Operator as Operator
 import qualified Burrito.Internal.Type.Template as Template
@@ -33,89 +34,78 @@ keepConsistent xs = case xs of
     Monad.guard $ all ((== v) . snd) ts
     (x :) <$> keepConsistent fs
 
-type Matcher = ReadP.ReadP [(String, Value.Value)]
-
-template :: Template.Template -> Matcher
+template :: Template.Template -> ReadP.ReadP [(String, Value.Value)]
 template x = do
   xs <- fmap mconcat . traverse token $ Template.tokens x
   ReadP.eof
   pure xs
 
-token :: Token.Token -> Matcher
+token :: Token.Token -> ReadP.ReadP [(String, Value.Value)]
 token x = case x of
   Token.Expression y -> expression y
-  Token.Literal y -> literal y
+  Token.Literal y -> [] <$ literal y
 
-expression :: Expression.Expression -> Matcher
-expression x =
-  let
-    o = Expression.operator x
-    f =
-      fmap mconcat
-        . traverse (variable o)
-        . NonEmpty.toList
-        $ Expression.variables x
-  in case o of
-    Operator.None -> f
-    _ -> ReadP.pfail
+expression :: Expression.Expression -> ReadP.ReadP [(String, Value.Value)]
+expression x = case Expression.operator x of
+  Operator.None -> case NonEmpty.toList $ Expression.variables x of
+    [y] -> variable y
+    _ -> fail "TODO: multiple variables"
+  _ -> fail "TODO: operators"
 
-variable :: Operator.Operator -> Variable.Variable -> Matcher
-variable o v = do
-  let
-    many p = ((:) <$> p <*> many p) ReadP.+++ pure []
-    f p = Value.String . Text.pack <$> many (ReadP.satisfy p)
-  x <- case o of
-    Operator.None -> f Expand.isUnreserved
-    _ -> ReadP.pfail
-  pure
-    [(LazyText.unpack . Builder.toLazyText . Render.name $ Variable.name v, x)]
+variable :: Variable.Variable -> ReadP.ReadP [(String, Value.Value)]
+variable x = case Variable.modifier x of
+  Modifier.None -> do
+    v <- Value.String . Text.pack <$> many (ReadP.satisfy Expand.isUnreserved)
+    pure
+      [ ( LazyText.unpack . Builder.toLazyText . Render.name $ Variable.name x
+        , v
+        )
+      ]
+  _ -> fail "TODO: modifiers"
 
-literal :: Literal.Literal -> Matcher
-literal =
-  fmap mconcat
-    . traverse literalCharacter
-    . NonEmpty.toList
-    . Literal.characters
+many :: ReadP.ReadP a -> ReadP.ReadP [a]
+many p = ((:) <$> p <*> many p) ReadP.+++ pure []
 
-literalCharacter :: Character.Character Literal.Literal -> Matcher
-literalCharacter x = case x of
+literal :: Literal.Literal -> ReadP.ReadP ()
+literal = mapM_ literalCharacter . NonEmpty.toList . Literal.characters
+
+literalCharacter :: Character.Character Literal.Literal -> ReadP.ReadP ()
+literalCharacter = character Expand.isAllowed
+
+character :: (Char -> Bool) -> Character.Character tag -> ReadP.ReadP ()
+character f x = case x of
   Character.Encoded y z -> encodedCharacter y z
-  Character.Unencoded y -> unencodedCharacter y
+  Character.Unencoded y -> unencodedCharacter f y
 
-encodedCharacter :: Digit.Digit -> Digit.Digit -> Matcher
+encodedCharacter :: Digit.Digit -> Digit.Digit -> ReadP.ReadP ()
 encodedCharacter x y = ReadP.char '%' *> digit x *> digit y
 
-digit :: Digit.Digit -> Matcher
-digit x = do
-  Monad.void . ReadP.char $ case x of
-    Digit.Ox0 -> '0'
-    Digit.Ox1 -> '1'
-    Digit.Ox2 -> '2'
-    Digit.Ox3 -> '3'
-    Digit.Ox4 -> '4'
-    Digit.Ox5 -> '5'
-    Digit.Ox6 -> '6'
-    Digit.Ox7 -> '7'
-    Digit.Ox8 -> '8'
-    Digit.Ox9 -> '9'
-    Digit.OxA Case.Upper -> 'A'
-    Digit.OxB Case.Upper -> 'B'
-    Digit.OxC Case.Upper -> 'C'
-    Digit.OxD Case.Upper -> 'D'
-    Digit.OxE Case.Upper -> 'E'
-    Digit.OxF Case.Upper -> 'F'
-    Digit.OxA Case.Lower -> 'a'
-    Digit.OxB Case.Lower -> 'b'
-    Digit.OxC Case.Lower -> 'c'
-    Digit.OxD Case.Lower -> 'd'
-    Digit.OxE Case.Lower -> 'e'
-    Digit.OxF Case.Lower -> 'f'
-  pure []
+digit :: Digit.Digit -> ReadP.ReadP ()
+digit x = Monad.void . ReadP.char $ case x of
+  Digit.Ox0 -> '0'
+  Digit.Ox1 -> '1'
+  Digit.Ox2 -> '2'
+  Digit.Ox3 -> '3'
+  Digit.Ox4 -> '4'
+  Digit.Ox5 -> '5'
+  Digit.Ox6 -> '6'
+  Digit.Ox7 -> '7'
+  Digit.Ox8 -> '8'
+  Digit.Ox9 -> '9'
+  Digit.OxA Case.Upper -> 'A'
+  Digit.OxB Case.Upper -> 'B'
+  Digit.OxC Case.Upper -> 'C'
+  Digit.OxD Case.Upper -> 'D'
+  Digit.OxE Case.Upper -> 'E'
+  Digit.OxF Case.Upper -> 'F'
+  Digit.OxA Case.Lower -> 'a'
+  Digit.OxB Case.Lower -> 'b'
+  Digit.OxC Case.Lower -> 'c'
+  Digit.OxD Case.Lower -> 'd'
+  Digit.OxE Case.Lower -> 'e'
+  Digit.OxF Case.Lower -> 'f'
 
-unencodedCharacter :: Char -> Matcher
-unencodedCharacter x =
-  ([] <$ ReadP.char x)
-    ReadP.<++ (fmap mconcat
-              . traverse (uncurry encodedCharacter)
-              $ Expand.encodeCharacter x
-              )
+unencodedCharacter :: (Char -> Bool) -> Char -> ReadP.ReadP ()
+unencodedCharacter f x = if f x
+  then Monad.void $ ReadP.char x
+  else mapM_ (uncurry encodedCharacter) $ Expand.encodeCharacter x
