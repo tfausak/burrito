@@ -54,9 +54,10 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     matchTest "{a}b" ["a" =: s "AB"] "ABb"
     matchTest "{a}{a}" ["a" =: s "A"] "AA"
     matchTest "{a}{a}" ["a" =: s "AB"] "ABAB"
-
-    -- TODO: Test matching on encoded characters.
-    -- matchTest "{a}" ["a" =: s "/"] "%2F"
+    matchTest "{a}" ["a" =: s "/"] "%2F"
+    matchTest "{a}" ["a" =: s "\xa0"] "%C2%A0"
+    matchTest "{a}" ["a" =: s "\xd7ff"] "%ED%9F%BF"
+    matchTest "{a}" ["a" =: s "\x10000"] "%F0%90%80%80"
 
     -- TODO: Test matching on operators.
     -- matchTest "{+a}" ["a" =: s "/"] "/"

@@ -15,9 +15,13 @@ import qualified Burrito.Internal.Type.Token as Token
 import qualified Burrito.Internal.Type.Value as Value
 import qualified Burrito.Internal.Type.Variable as Variable
 import qualified Control.Monad as Monad
+import qualified Data.ByteString as ByteString
+import qualified Data.Char as Char
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
+import qualified Data.Text.Encoding.Error as Text
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Text.Lazy.Builder as Builder
 import qualified Text.ParserCombinators.ReadP as ReadP
@@ -55,7 +59,7 @@ expression x = case Expression.operator x of
 variable :: Variable.Variable -> ReadP.ReadP [(String, Value.Value)]
 variable x = case Variable.modifier x of
   Modifier.None -> do
-    v <- Value.String . Text.pack <$> many (ReadP.satisfy Expand.isUnreserved)
+    v <- Value.String <$> someCharacters Expand.isUnreserved
     pure
       [ ( LazyText.unpack . Builder.toLazyText . Render.name $ Variable.name x
         , v
@@ -63,8 +67,37 @@ variable x = case Variable.modifier x of
       ]
   _ -> fail "TODO: modifiers"
 
+someCharacters :: (Char -> Bool) -> ReadP.ReadP Text.Text
+someCharacters f =
+  mconcat <$> many (someEncodedCharacters ReadP.<++ someUnencodedCharacters f)
+
 many :: ReadP.ReadP a -> ReadP.ReadP [a]
 many p = ((:) <$> p <*> many p) ReadP.+++ pure []
+
+someEncodedCharacters :: ReadP.ReadP Text.Text
+someEncodedCharacters =
+  Text.decodeUtf8With Text.lenientDecode
+    . ByteString.pack
+    . fmap (uncurry Digit.toWord8)
+    . NonEmpty.toList
+    <$> some anEncodedCharacter
+
+some :: ReadP.ReadP a -> ReadP.ReadP (NonEmpty.NonEmpty a)
+some p = NonEmpty.NonEmpty <$> p <*> many p
+
+someUnencodedCharacters :: (Char -> Bool) -> ReadP.ReadP Text.Text
+someUnencodedCharacters f =
+  Text.pack . NonEmpty.toList <$> some (ReadP.satisfy f)
+
+anEncodedCharacter :: ReadP.ReadP (Digit.Digit, Digit.Digit)
+anEncodedCharacter = do
+  Monad.void $ ReadP.char '%'
+  (,) <$> aDigit <*> aDigit
+
+aDigit :: ReadP.ReadP Digit.Digit
+aDigit = do
+  x <- ReadP.satisfy Char.isHexDigit
+  maybe (fail "invalid Digit") pure $ Digit.fromChar x
 
 literal :: Literal.Literal -> ReadP.ReadP ()
 literal = mapM_ literalCharacter . NonEmpty.toList . Literal.characters
