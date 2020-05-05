@@ -50,16 +50,20 @@ token x = case x of
   Token.Literal y -> [] <$ literal y
 
 expression :: Expression.Expression -> ReadP.ReadP [(String, Value.Value)]
-expression x = case Expression.operator x of
-  Operator.None -> case NonEmpty.toList $ Expression.variables x of
-    [y] -> variable y
-    _ -> fail "TODO: multiple variables"
-  _ -> fail "TODO: operators"
+expression x = case NonEmpty.toList $ Expression.variables x of
+  [y] -> case Expression.operator x of
+    Operator.None -> variable Expand.isUnreserved y
+    Operator.NumberSign ->
+      (ReadP.char '#' *> variable Expand.isAllowed y) ReadP.<++ pure []
+    Operator.PlusSign -> variable Expand.isAllowed y
+    _ -> fail "TODO: operators"
+  _ -> fail "TODO: multiple variables"
 
-variable :: Variable.Variable -> ReadP.ReadP [(String, Value.Value)]
-variable x = case Variable.modifier x of
+variable
+  :: (Char -> Bool) -> Variable.Variable -> ReadP.ReadP [(String, Value.Value)]
+variable f x = case Variable.modifier x of
   Modifier.None -> do
-    v <- Value.String <$> someCharacters Expand.isUnreserved
+    v <- Value.String <$> someCharacters f
     pure
       [ ( LazyText.unpack . Builder.toLazyText . Render.name $ Variable.name x
         , v

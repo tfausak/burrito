@@ -54,19 +54,33 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     matchTest "{a}b" ["a" =: s "AB"] "ABb"
     matchTest "{a}{a}" ["a" =: s "A"] "AA"
     matchTest "{a}{a}" ["a" =: s "AB"] "ABAB"
+    matchTest "{a}" ["a" =: s "%"] "%25"
     matchTest "{a}" ["a" =: s "/"] "%2F"
     matchTest "{a}" ["a" =: s "\xa0"] "%C2%A0"
     matchTest "{a}" ["a" =: s "\xd7ff"] "%ED%9F%BF"
     matchTest "{a}" ["a" =: s "\x10000"] "%F0%90%80%80"
+    matchTest "{a}" ["a" =: s "A/B"] "A%2FB"
+    matchTest "{a}" ["a" =: s "WX\xa0\xa1YZ"] "WX%C2%A0%C2%A1YZ"
+    matchTest "{+a}" ["a" =: s "/"] "/"
+    matchTest "{+a}" ["a" =: s "/"] "%2F"
+    matchTest "{#a}" [] ""
+    matchTest "{#a}" ["a" =: s ""] "#"
+    matchTest "{#a}" ["a" =: s "A"] "#A"
+    matchTest "{#a}" ["a" =: s "/"] "#/"
 
-    -- TODO: Test matching on operators.
-    -- matchTest "{+a}" ["a" =: s "/"] "/"
+    -- TODO: Test matching on other operators. (.) (/) (;) (?) (&)
 
     -- TODO: Test matching multiple variables in one expression.
     -- matchTest "{a,a}" ["a" =: s "A"] "A,A"
 
     -- TODO: Test matching on modifiers.
     -- matchTest "{a*}" ["a" =: s "A"] "A"
+
+    -- TODO: Test matching on lists.
+    -- matchTest "{a}" ["a" =: l ["A", "B"]] "A,B"
+
+    -- TODO: Test matching on dictionaries.
+    -- matchTest "{a}" ["a" =: d ["k" =: "v"]] "k,v"
 
     -- TODO: Enhance normal tests to round-trip matching.
 
