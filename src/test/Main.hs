@@ -103,6 +103,9 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     matchTest "{?a,b}" ["a" =: s "A", "b" =: s "B"] "?a=A&b=B"
     matchTest "{&a,b}" ["a" =: s "A", "b" =: s "B"] "&a=A&b=B"
 
+    -- TODO: Test matching on undefined values.
+    -- matchTest "{a,b}" ["a" =: s "A"] "A"
+
     -- TODO: Test matching on explode modifier.
     -- matchTest "{a*}" ["a" =: s "A"] "A"
 
