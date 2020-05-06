@@ -23,6 +23,7 @@ import qualified Burrito.Internal.Type.Template as Template
 import qualified Burrito.Internal.Type.Token as Token
 import qualified Burrito.Internal.Type.Variable as Variable
 import qualified Data.String as String
+import qualified GHC.Stack as Stack
 import qualified Test.Hspec as Hspec
 import qualified Test.Hspec.QuickCheck as Hspec
 import qualified Test.QuickCheck as QC
@@ -35,6 +36,12 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
 
   Hspec.describe "match" $ do
     let
+      matchTest
+        :: Stack.HasCallStack
+        => String
+        -> [(String, Burrito.Value)]
+        -> String
+        -> Hspec.Spec
       matchTest input values output = Hspec.it "" $ do
         template <- maybe (fail "invalid Template") pure $ Burrito.parse input
         Burrito.match output template `Hspec.shouldSatisfy` elem values
@@ -67,14 +74,35 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     matchTest "{#a}" ["a" =: s ""] "#"
     matchTest "{#a}" ["a" =: s "A"] "#A"
     matchTest "{#a}" ["a" =: s "/"] "#/"
-
-    -- TODO: Test matching on other operators. (.) (/) (;) (?) (&)
+    matchTest "{.a}" [] ""
+    matchTest "{.a}" ["a" =: s ""] "."
+    matchTest "{.a}" ["a" =: s "A"] ".A"
+    matchTest "{.a}" ["a" =: s "/"] ".%2F"
+    matchTest "{/a}" [] ""
+    matchTest "{/a}" ["a" =: s ""] "/"
+    matchTest "{/a}" ["a" =: s "A"] "/A"
+    matchTest "{/a}" ["a" =: s "/"] "/%2F"
+    matchTest "{;a}" [] ""
+    matchTest "{;a}" ["a" =: s ""] ";a"
+    matchTest "{;a}" ["a" =: s "A"] ";a=A"
+    matchTest "{;a}" ["a" =: s "/"] ";a=%2F"
+    matchTest "{?a}" [] ""
+    matchTest "{?a}" ["a" =: s ""] "?a="
+    matchTest "{?a}" ["a" =: s "A"] "?a=A"
+    matchTest "{?a}" ["a" =: s "/"] "?a=%2F"
+    matchTest "{&a}" [] ""
+    matchTest "{&a}" ["a" =: s ""] "&a="
+    matchTest "{&a}" ["a" =: s "A"] "&a=A"
+    matchTest "{&a}" ["a" =: s "/"] "&a=%2F"
 
     -- TODO: Test matching multiple variables in one expression.
     -- matchTest "{a,a}" ["a" =: s "A"] "A,A"
 
-    -- TODO: Test matching on modifiers.
+    -- TODO: Test matching on explode modifier.
     -- matchTest "{a*}" ["a" =: s "A"] "A"
+
+    -- TODO: Test matching on prefix modifier.
+    -- matchTest "{a:1}/{a}" ["a" =: s "AB"] "A/AB"
 
     -- TODO: Test matching on lists.
     -- matchTest "{a}" ["a" =: l ["A", "B"]] "A,B"

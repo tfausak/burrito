@@ -8,6 +8,7 @@ import qualified Burrito.Internal.Type.Digit as Digit
 import qualified Burrito.Internal.Type.Expression as Expression
 import qualified Burrito.Internal.Type.Literal as Literal
 import qualified Burrito.Internal.Type.Modifier as Modifier
+import qualified Burrito.Internal.Type.Name as Name
 import qualified Burrito.Internal.Type.NonEmpty as NonEmpty
 import qualified Burrito.Internal.Type.Operator as Operator
 import qualified Burrito.Internal.Type.Template as Template
@@ -15,6 +16,7 @@ import qualified Burrito.Internal.Type.Token as Token
 import qualified Burrito.Internal.Type.Value as Value
 import qualified Burrito.Internal.Type.Variable as Variable
 import qualified Control.Monad as Monad
+import qualified Data.Bifunctor as Bifunctor
 import qualified Data.ByteString as ByteString
 import qualified Data.Char as Char
 import qualified Data.List as List
@@ -27,10 +29,18 @@ import qualified Data.Text.Lazy.Builder as Builder
 import qualified Text.ParserCombinators.ReadP as ReadP
 
 match :: String -> Template.Template -> [[(String, Value.Value)]]
-match s t =
-  Maybe.mapMaybe (keepConsistent . fst) $ ReadP.readP_to_S (template t) s
+match s =
+  fmap renderNames
+    . Maybe.mapMaybe (keepConsistent . fst)
+    . flip ReadP.readP_to_S s
+    . template
 
-keepConsistent :: [(String, Value.Value)] -> Maybe [(String, Value.Value)]
+renderNames :: [(Name.Name, Value.Value)] -> [(String, Value.Value)]
+renderNames =
+  fmap . Bifunctor.first $ LazyText.unpack . Builder.toLazyText . Render.name
+
+keepConsistent
+  :: [(Name.Name, Value.Value)] -> Maybe [(Name.Name, Value.Value)]
 keepConsistent xs = case xs of
   [] -> Just xs
   x@(k, v) : ys -> do
@@ -38,41 +48,80 @@ keepConsistent xs = case xs of
     Monad.guard $ all ((== v) . snd) ts
     (x :) <$> keepConsistent fs
 
-template :: Template.Template -> ReadP.ReadP [(String, Value.Value)]
+template :: Template.Template -> ReadP.ReadP [(Name.Name, Value.Value)]
 template x = do
   xs <- fmap mconcat . traverse token $ Template.tokens x
   ReadP.eof
   pure xs
 
-token :: Token.Token -> ReadP.ReadP [(String, Value.Value)]
+token :: Token.Token -> ReadP.ReadP [(Name.Name, Value.Value)]
 token x = case x of
   Token.Expression y -> expression y
   Token.Literal y -> [] <$ literal y
 
-expression :: Expression.Expression -> ReadP.ReadP [(String, Value.Value)]
-expression x = case NonEmpty.toList $ Expression.variables x of
-  [y] -> case Expression.operator x of
+expression :: Expression.Expression -> ReadP.ReadP [(Name.Name, Value.Value)]
+expression x = variables (Expression.operator x) (Expression.variables x)
+
+variables
+  :: Operator.Operator
+  -> NonEmpty.NonEmpty Variable.Variable
+  -> ReadP.ReadP [(Name.Name, Value.Value)]
+variables op vs = case NonEmpty.toList vs of
+  [y] -> case op of
+    Operator.Ampersand ->
+      (ReadP.char '&'
+        *> name (Variable.name y)
+        *> ReadP.char '='
+        *> variable Expand.isUnreserved y
+        )
+        ReadP.<++ pure []
+    Operator.FullStop ->
+      (ReadP.char '.' *> variable Expand.isUnreserved y) ReadP.<++ pure []
     Operator.None -> variable Expand.isUnreserved y
     Operator.NumberSign ->
       (ReadP.char '#' *> variable Expand.isAllowed y) ReadP.<++ pure []
     Operator.PlusSign -> variable Expand.isAllowed y
-    _ -> fail "TODO: operators"
+    Operator.QuestionMark ->
+      (ReadP.char '?'
+        *> name (Variable.name y)
+        *> ReadP.char '='
+        *> variable Expand.isUnreserved y
+        )
+        ReadP.<++ pure []
+    Operator.Semicolon ->
+      (ReadP.char ';'
+        *> name (Variable.name y)
+        *> ReadP.char '='
+        *> variable Expand.isUnreserved y
+        )
+        ReadP.<++ (ReadP.char ';' *> name (Variable.name y) *> pure
+                    [(Variable.name y, Value.String $ Text.pack "")]
+                  )
+        ReadP.<++ pure []
+    Operator.Solidus ->
+      (ReadP.char '/' *> variable Expand.isUnreserved y) ReadP.<++ pure []
   _ -> fail "TODO: multiple variables"
 
+name :: Name.Name -> ReadP.ReadP ()
+name =
+  Monad.void
+    . ReadP.string
+    . LazyText.unpack
+    . Builder.toLazyText
+    . Render.name
+
 variable
-  :: (Char -> Bool) -> Variable.Variable -> ReadP.ReadP [(String, Value.Value)]
+  :: (Char -> Bool)
+  -> Variable.Variable
+  -> ReadP.ReadP [(Name.Name, Value.Value)]
 variable f x = case Variable.modifier x of
   Modifier.None -> do
-    v <- Value.String <$> someCharacters f
-    pure
-      [ ( LazyText.unpack . Builder.toLazyText . Render.name $ Variable.name x
-        , v
-        )
-      ]
+    v <- Value.String <$> manyCharacters f
+    pure [(Variable.name x, v)]
   _ -> fail "TODO: modifiers"
 
-someCharacters :: (Char -> Bool) -> ReadP.ReadP Text.Text
-someCharacters f =
+manyCharacters :: (Char -> Bool) -> ReadP.ReadP Text.Text
+manyCharacters f =
   mconcat <$> many (someEncodedCharacters ReadP.<++ someUnencodedCharacters f)
 
 many :: ReadP.ReadP a -> ReadP.ReadP [a]
