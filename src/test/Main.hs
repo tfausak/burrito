@@ -94,9 +94,14 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     matchTest "{&a}" ["a" =: s ""] "&a="
     matchTest "{&a}" ["a" =: s "A"] "&a=A"
     matchTest "{&a}" ["a" =: s "/"] "&a=%2F"
-
-    -- TODO: Test matching multiple variables in one expression.
-    -- matchTest "{a,a}" ["a" =: s "A"] "A,A"
+    matchTest "{a,b}" ["a" =: s "A", "b" =: s "B"] "A,B"
+    matchTest "{+a,b}" ["a" =: s "A", "b" =: s "B"] "A,B"
+    matchTest "{#a,b}" ["a" =: s "A", "b" =: s "B"] "#A,B"
+    matchTest "{.a,b}" ["a" =: s "A", "b" =: s "B"] ".A.B"
+    matchTest "{/a,b}" ["a" =: s "A", "b" =: s "B"] "/A/B"
+    matchTest "{;a,b}" ["a" =: s "A", "b" =: s "B"] ";a=A;b=B"
+    matchTest "{?a,b}" ["a" =: s "A", "b" =: s "B"] "?a=A&b=B"
+    matchTest "{&a,b}" ["a" =: s "A", "b" =: s "B"] "&a=A&b=B"
 
     -- TODO: Test matching on explode modifier.
     -- matchTest "{a*}" ["a" =: s "A"] "A"

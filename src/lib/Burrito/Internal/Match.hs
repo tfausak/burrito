@@ -66,41 +66,48 @@ variables
   :: Operator.Operator
   -> NonEmpty.NonEmpty Variable.Variable
   -> ReadP.ReadP [(Name.Name, Value.Value)]
-variables op vs = case NonEmpty.toList vs of
-  [y] -> case op of
-    Operator.Ampersand ->
-      (ReadP.char '&'
-        *> name (Variable.name y)
-        *> ReadP.char '='
-        *> variable Expand.isUnreserved y
-        )
-        ReadP.<++ pure []
-    Operator.FullStop ->
-      (ReadP.char '.' *> variable Expand.isUnreserved y) ReadP.<++ pure []
-    Operator.None -> variable Expand.isUnreserved y
-    Operator.NumberSign ->
-      (ReadP.char '#' *> variable Expand.isAllowed y) ReadP.<++ pure []
-    Operator.PlusSign -> variable Expand.isAllowed y
-    Operator.QuestionMark ->
-      (ReadP.char '?'
-        *> name (Variable.name y)
-        *> ReadP.char '='
-        *> variable Expand.isUnreserved y
-        )
-        ReadP.<++ pure []
-    Operator.Semicolon ->
-      (ReadP.char ';'
-        *> name (Variable.name y)
-        *> ReadP.char '='
-        *> variable Expand.isUnreserved y
-        )
-        ReadP.<++ (ReadP.char ';' *> name (Variable.name y) *> pure
-                    [(Variable.name y, Value.String $ Text.pack "")]
-                  )
-        ReadP.<++ pure []
-    Operator.Solidus ->
-      (ReadP.char '/' *> variable Expand.isUnreserved y) ReadP.<++ pure []
-  _ -> fail "TODO: multiple variables"
+variables op vs = case op of
+  Operator.Ampersand -> vars vs (Just '&') '&' varEq
+  Operator.FullStop -> vars vs (Just '.') '.' $ variable Expand.isUnreserved
+  Operator.None -> vars vs Nothing ',' $ variable Expand.isUnreserved
+  Operator.NumberSign -> vars vs (Just '#') ',' $ variable Expand.isAllowed
+  Operator.PlusSign -> vars vs Nothing ',' $ variable Expand.isAllowed
+  Operator.QuestionMark -> vars vs (Just '?') '&' varEq
+  Operator.Semicolon -> vars vs (Just ';') ';' $ \v -> do
+    let n = Variable.name v
+    name n
+    ReadP.option [(n, Value.String Text.empty)] $ do
+      char_ '='
+      variable Expand.isUnreserved v
+  Operator.Solidus -> vars vs (Just '/') '/' $ variable Expand.isUnreserved
+
+vars
+  :: NonEmpty.NonEmpty a
+  -> Maybe Char
+  -> Char
+  -> (a -> ReadP.ReadP [b])
+  -> ReadP.ReadP [b]
+vars vs m c f =
+  let
+    ctx = case m of
+      Nothing -> id
+      Just o -> \x -> ReadP.option [] $ char_ o *> x
+  in
+    ctx
+    . fmap mconcat
+    . sequence
+    . List.intersperse (mempty <$ char_ c)
+    . fmap f
+    $ NonEmpty.toList vs
+
+char_ :: Char -> ReadP.ReadP ()
+char_ = Monad.void . ReadP.char
+
+varEq :: Variable.Variable -> ReadP.ReadP [(Name.Name, Value.Value)]
+varEq v = do
+  name $ Variable.name v
+  char_ '='
+  variable Expand.isUnreserved v
 
 name :: Name.Name -> ReadP.ReadP ()
 name =
@@ -144,7 +151,7 @@ someUnencodedCharacters f =
 
 anEncodedCharacter :: ReadP.ReadP (Digit.Digit, Digit.Digit)
 anEncodedCharacter = do
-  Monad.void $ ReadP.char '%'
+  char_ '%'
   (,) <$> aDigit <*> aDigit
 
 aDigit :: ReadP.ReadP Digit.Digit
@@ -164,10 +171,10 @@ character f x = case x of
   Character.Unencoded y -> unencodedCharacter f y
 
 encodedCharacter :: Digit.Digit -> Digit.Digit -> ReadP.ReadP ()
-encodedCharacter x y = ReadP.char '%' *> digit x *> digit y
+encodedCharacter x y = char_ '%' *> digit x *> digit y
 
 digit :: Digit.Digit -> ReadP.ReadP ()
-digit x = Monad.void . ReadP.char $ case x of
+digit x = char_ $ case x of
   Digit.Ox0 -> '0'
   Digit.Ox1 -> '1'
   Digit.Ox2 -> '2'
@@ -193,5 +200,5 @@ digit x = Monad.void . ReadP.char $ case x of
 
 unencodedCharacter :: (Char -> Bool) -> Char -> ReadP.ReadP ()
 unencodedCharacter f x = if f x
-  then Monad.void $ ReadP.char x
+  then char_ x
   else mapM_ (uncurry encodedCharacter) $ Expand.encodeCharacter x
