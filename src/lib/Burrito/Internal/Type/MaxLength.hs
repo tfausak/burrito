@@ -1,9 +1,9 @@
-{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Burrito.Internal.Type.MaxLength where
 
-import qualified Language.Haskell.TH.Syntax as TH
+import qualified Data.Data as Data
 
 newtype MaxLength = MaxLength
   { count :: Int
-  } deriving (Eq, TH.Lift, Show)
+  } deriving (Data.Data, Eq, Show)

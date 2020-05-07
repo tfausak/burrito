@@ -23,7 +23,7 @@ import qualified Text.Read as Read
 parse :: String -> Maybe Template.Template
 parse = either (const Nothing) Just . Parsec.parse template ""
 
-template :: (Parsec.Stream s m Char) => Parsec.ParsecT s u m Template.Template
+template :: Parsec.Stream s m Char => Parsec.ParsecT s u m Template.Template
 template = Template.Template <$> Parsec.many token <* Parsec.eof
 
 token :: Parsec.Stream s m Char => Parsec.ParsecT s u m Token.Token

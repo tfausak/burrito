@@ -1,11 +1,11 @@
-{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Burrito.Internal.Type.Digit where
 
 import qualified Burrito.Internal.Type.Case as Case
 import qualified Data.Bits as Bits
 import qualified Data.Word as Word
-import qualified Language.Haskell.TH.Syntax as TH
+import qualified Data.Data as Data
 
 data Digit
   = Ox0
@@ -24,7 +24,7 @@ data Digit
   | OxD Case.Case
   | OxE Case.Case
   | OxF Case.Case
-  deriving (Eq, TH.Lift, Show)
+  deriving (Data.Data, Eq, Show)
 
 fromChar :: Char -> Maybe Digit
 fromChar x = case x of

@@ -1,10 +1,10 @@
-{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Burrito.Internal.Type.Case where
 
-import qualified Language.Haskell.TH.Syntax as TH
+import qualified Data.Data as Data
 
 data Case
   = Lower
   | Upper
-  deriving (Eq, TH.Lift, Show)
+  deriving (Data.Data, Eq, Show)

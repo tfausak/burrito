@@ -1,13 +1,13 @@
-{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Burrito.Internal.Type.Expression where
 
 import qualified Burrito.Internal.Type.NonEmpty as NonEmpty
 import qualified Burrito.Internal.Type.Operator as Operator
 import qualified Burrito.Internal.Type.Variable as Variable
-import qualified Language.Haskell.TH.Syntax as TH
+import qualified Data.Data as Data
 
 data Expression = Expression
   { operator :: Operator.Operator
   , variables :: NonEmpty.NonEmpty Variable.Variable
-  } deriving (Eq, TH.Lift, Show)
+  } deriving (Data.Data, Eq, Show)

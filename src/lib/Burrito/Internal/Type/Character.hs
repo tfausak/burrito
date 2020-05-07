@@ -1,11 +1,11 @@
-{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Burrito.Internal.Type.Character where
 
 import qualified Burrito.Internal.Type.Digit as Digit
-import qualified Language.Haskell.TH.Syntax as TH
+import qualified Data.Data as Data
 
 data Character tag
   = Encoded Digit.Digit Digit.Digit
   | Unencoded Char
-  deriving (Eq, TH.Lift, Show)
+  deriving (Data.Data, Eq, Show)

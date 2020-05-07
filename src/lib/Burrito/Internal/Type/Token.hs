@@ -1,12 +1,12 @@
-{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Burrito.Internal.Type.Token where
 
 import qualified Burrito.Internal.Type.Expression as Expression
 import qualified Burrito.Internal.Type.Literal as Literal
-import qualified Language.Haskell.TH.Syntax as TH
+import qualified Data.Data as Data
 
 data Token
   = Expression Expression.Expression
   | Literal Literal.Literal
-  deriving (Eq, TH.Lift, Show)
+  deriving (Data.Data, Eq, Show)

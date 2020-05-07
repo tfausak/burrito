@@ -1,10 +1,10 @@
-{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Burrito.Internal.Type.Template where
 
 import qualified Burrito.Internal.Type.Token as Token
-import qualified Language.Haskell.TH.Syntax as TH
+import qualified Data.Data as Data
 
 newtype Template = Template
   { tokens :: [Token.Token]
-  } deriving (Eq, TH.Lift, Show)
+  } deriving (Data.Data, Eq, Show)
