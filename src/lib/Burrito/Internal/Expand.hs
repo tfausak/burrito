@@ -202,8 +202,7 @@ name =
     . Name.fields
 
 field :: Field.Field -> Builder.Builder
-field =
-  mconcat . fmap (character $ const True) . NonEmpty.toList . Field.characters
+field = foldMap (character $ const True) . Field.characters
 
 character :: (Char -> Bool) -> Character.Character tag -> Builder.Builder
 character f x = case x of
@@ -277,4 +276,4 @@ encodeCharacter =
   fmap Digit.fromWord8 . ByteString.unpack . Text.encodeUtf8 . Text.singleton
 
 literal :: Literal.Literal -> Builder.Builder
-literal = foldMap (character isAllowed) . NonEmpty.toList . Literal.characters
+literal = foldMap (character isAllowed) . Literal.characters

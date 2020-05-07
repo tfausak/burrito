@@ -160,7 +160,7 @@ aDigit = do
   maybe (fail "invalid Digit") pure $ Digit.fromChar x
 
 literal :: Literal.Literal -> ReadP.ReadP ()
-literal = mapM_ literalCharacter . NonEmpty.toList . Literal.characters
+literal = mapM_ literalCharacter . Literal.characters
 
 literalCharacter :: Character.Character Literal.Literal -> ReadP.ReadP ()
 literalCharacter = character Expand.isAllowed

@@ -61,10 +61,7 @@ name :: Name.Name -> Builder.Builder
 name = sepBy1 field (Builder.singleton '.') . Name.fields
 
 field :: Field.Field -> Builder.Builder
-field = nonEmpty character . Field.characters
-
-nonEmpty :: (a -> Builder.Builder) -> NonEmpty.NonEmpty a -> Builder.Builder
-nonEmpty f = foldMap f . NonEmpty.toList
+field = foldMap character . Field.characters
 
 character :: Character.Character tag -> Builder.Builder
 character x = case x of
@@ -109,4 +106,4 @@ maxLength :: MaxLength.MaxLength -> Builder.Builder
 maxLength = Builder.fromString . show . MaxLength.count
 
 literal :: Literal.Literal -> Builder.Builder
-literal = nonEmpty character . Literal.characters
+literal = foldMap character . Literal.characters
