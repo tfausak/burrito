@@ -17,11 +17,11 @@ import qualified Burrito.Internal.Type.Literal as Literal
 import qualified Burrito.Internal.Type.MaxLength as MaxLength
 import qualified Burrito.Internal.Type.Modifier as Modifier
 import qualified Burrito.Internal.Type.Name as Name
-import qualified Burrito.Internal.Type.NonEmpty as NonEmpty
 import qualified Burrito.Internal.Type.Operator as Operator
 import qualified Burrito.Internal.Type.Template as Template
 import qualified Burrito.Internal.Type.Token as Token
 import qualified Burrito.Internal.Type.Variable as Variable
+import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.String as String
 import qualified GHC.Stack as Stack
 import qualified Test.Hspec as Hspec
@@ -1185,13 +1185,8 @@ simplify tokens = case tokens of
   _ -> tokens
 
 appendLiteral :: Literal.Literal -> Literal.Literal -> Literal.Literal
-appendLiteral x y = Literal.Literal
-  $ appendNonEmpty (Literal.characters x) (Literal.characters y)
-
-appendNonEmpty
-  :: NonEmpty.NonEmpty a -> NonEmpty.NonEmpty a -> NonEmpty.NonEmpty a
-appendNonEmpty x y =
-  NonEmpty.NonEmpty (NonEmpty.head x) $ NonEmpty.tail x <> NonEmpty.toList y
+appendLiteral x y =
+  Literal.Literal $ Literal.characters x <> Literal.characters y
 
 arbitraryToken :: QC.Gen Token.Token
 arbitraryToken = QC.oneof
@@ -1234,10 +1229,10 @@ shrinkOperator x = case x of
   _ -> [Operator.None]
 
 arbitraryNonEmpty :: QC.Gen a -> QC.Gen (NonEmpty.NonEmpty a)
-arbitraryNonEmpty g = NonEmpty.NonEmpty <$> g <*> QC.listOf g
+arbitraryNonEmpty g = (NonEmpty.:|) <$> g <*> QC.listOf g
 
 shrinkNonEmpty :: Shrink a -> Shrink (NonEmpty.NonEmpty a)
-shrinkNonEmpty f x = uncurry NonEmpty.NonEmpty
+shrinkNonEmpty f x = uncurry (NonEmpty.:|)
   <$> shrinkTuple f (QC.shrinkList f) (NonEmpty.head x, NonEmpty.tail x)
 
 arbitraryVariable :: QC.Gen Variable.Variable

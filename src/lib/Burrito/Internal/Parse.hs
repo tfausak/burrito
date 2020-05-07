@@ -10,13 +10,13 @@ import qualified Burrito.Internal.Type.Literal as Literal
 import qualified Burrito.Internal.Type.MaxLength as MaxLength
 import qualified Burrito.Internal.Type.Modifier as Modifier
 import qualified Burrito.Internal.Type.Name as Name
-import qualified Burrito.Internal.Type.NonEmpty as NonEmpty
 import qualified Burrito.Internal.Type.Operator as Operator
 import qualified Burrito.Internal.Type.Template as Template
 import qualified Burrito.Internal.Type.Token as Token
 import qualified Burrito.Internal.Type.Variable as Variable
 import qualified Data.Char as Char
 import qualified Data.Ix as Ix
+import qualified Data.List.NonEmpty as NonEmpty
 import qualified Text.Parsec as Parsec
 import qualified Text.Read as Read
 
@@ -56,7 +56,7 @@ sepBy1
   :: Parsec.ParsecT s u m a
   -> Parsec.ParsecT s u m x
   -> Parsec.ParsecT s u m (NonEmpty.NonEmpty a)
-sepBy1 p s = NonEmpty.NonEmpty <$> p <*> Parsec.many (s *> p)
+sepBy1 p s = (NonEmpty.:|) <$> p <*> Parsec.many (s *> p)
 
 variable :: Parsec.Stream s m Char => Parsec.ParsecT s u m Variable.Variable
 variable = Variable.Variable <$> name <*> modifier
@@ -69,7 +69,7 @@ field = Field.Field <$> nonEmpty fieldCharacter
 
 nonEmpty
   :: Parsec.ParsecT s u m a -> Parsec.ParsecT s u m (NonEmpty.NonEmpty a)
-nonEmpty p = NonEmpty.NonEmpty <$> p <*> Parsec.many p
+nonEmpty p = (NonEmpty.:|) <$> p <*> Parsec.many p
 
 fieldCharacter
   :: Parsec.Stream s m Char

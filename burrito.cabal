@@ -57,7 +57,6 @@ library
     Burrito.Internal.Type.MaxLength
     Burrito.Internal.Type.Modifier
     Burrito.Internal.Type.Name
-    Burrito.Internal.Type.NonEmpty
     Burrito.Internal.Type.Operator
     Burrito.Internal.Type.Template
     Burrito.Internal.Type.Token

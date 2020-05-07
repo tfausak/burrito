@@ -9,7 +9,6 @@ import qualified Burrito.Internal.Type.Literal as Literal
 import qualified Burrito.Internal.Type.MaxLength as MaxLength
 import qualified Burrito.Internal.Type.Modifier as Modifier
 import qualified Burrito.Internal.Type.Name as Name
-import qualified Burrito.Internal.Type.NonEmpty as NonEmpty
 import qualified Burrito.Internal.Type.Operator as Operator
 import qualified Burrito.Internal.Type.Template as Template
 import qualified Burrito.Internal.Type.Token as Token
@@ -21,6 +20,7 @@ import qualified Data.ByteString as ByteString
 import qualified Data.Char as Char
 import qualified Data.Functor.Identity as Identity
 import qualified Data.List as List
+import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
