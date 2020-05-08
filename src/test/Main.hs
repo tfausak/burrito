@@ -50,17 +50,22 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     matchTest "a" [] "a"
     matchTest "!" [] "!"
     matchTest "\xa0" [] "%C2%A0"
+
     matchTest "{a}" ["a" =: s ""] ""
     matchTest "{a}" ["a" =: s "A"] "A"
     matchTest "{a}" ["a" =: s "AB"] "AB"
+
     matchTest "a{b}" ["b" =: s ""] "a"
     matchTest "a{b}" ["b" =: s "B"] "aB"
     matchTest "a{b}" ["b" =: s "BC"] "aBC"
+
     matchTest "{a}b" ["a" =: s ""] "b"
     matchTest "{a}b" ["a" =: s "A"] "Ab"
     matchTest "{a}b" ["a" =: s "AB"] "ABb"
+
     matchTest "{a}{a}" ["a" =: s "A"] "AA"
     matchTest "{a}{a}" ["a" =: s "AB"] "ABAB"
+
     matchTest "{a}" ["a" =: s "%"] "%25"
     matchTest "{a}" ["a" =: s "/"] "%2F"
     matchTest "{a}" ["a" =: s "\xa0"] "%C2%A0"
@@ -68,39 +73,47 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     matchTest "{a}" ["a" =: s "\x10000"] "%F0%90%80%80"
     matchTest "{a}" ["a" =: s "A/B"] "A%2FB"
     matchTest "{a}" ["a" =: s "WX\xa0\xa1YZ"] "WX%C2%A0%C2%A1YZ"
+
     matchTest "{+a}" ["a" =: s "%"] "%25"
     matchTest "{+a}" ["a" =: s "/"] "/"
     matchTest "{+a}" ["a" =: s "/"] "%2F"
+
     matchTest "{#a}" [] ""
     matchTest "{#a}" ["a" =: s ""] "#"
     matchTest "{#a}" ["a" =: s "A"] "#A"
     matchTest "{#a}" ["a" =: s "%"] "#%25"
     matchTest "{#a}" ["a" =: s "/"] "#/"
+
     matchTest "{.a}" [] ""
     matchTest "{.a}" ["a" =: s ""] "."
     matchTest "{.a}" ["a" =: s "A"] ".A"
     matchTest "{.a}" ["a" =: s "%"] ".%25"
     matchTest "{.a}" ["a" =: s "/"] ".%2F"
+
     matchTest "{/a}" [] ""
     matchTest "{/a}" ["a" =: s ""] "/"
     matchTest "{/a}" ["a" =: s "A"] "/A"
     matchTest "{/a}" ["a" =: s "%"] "/%25"
     matchTest "{/a}" ["a" =: s "/"] "/%2F"
+
     matchTest "{;a}" [] ""
     matchTest "{;a}" ["a" =: s ""] ";a"
     matchTest "{;a}" ["a" =: s "A"] ";a=A"
     matchTest "{;a}" ["a" =: s "%"] ";a=%25"
     matchTest "{;a}" ["a" =: s "/"] ";a=%2F"
+
     matchTest "{?a}" [] ""
     matchTest "{?a}" ["a" =: s ""] "?a="
     matchTest "{?a}" ["a" =: s "A"] "?a=A"
     matchTest "{?a}" ["a" =: s "%"] "?a=%25"
     matchTest "{?a}" ["a" =: s "/"] "?a=%2F"
+
     matchTest "{&a}" [] ""
     matchTest "{&a}" ["a" =: s ""] "&a="
     matchTest "{&a}" ["a" =: s "A"] "&a=A"
     matchTest "{&a}" ["a" =: s "%"] "&a=%25"
     matchTest "{&a}" ["a" =: s "/"] "&a=%2F"
+
     matchTest "{a,b}" ["a" =: s "A", "b" =: s "B"] "A,B"
     matchTest "{+a,b}" ["a" =: s "A", "b" =: s "B"] "A,B"
     matchTest "{#a,b}" ["a" =: s "A", "b" =: s "B"] "#A,B"
@@ -110,8 +123,14 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     matchTest "{?a,b}" ["a" =: s "A", "b" =: s "B"] "?a=A&b=B"
     matchTest "{&a,b}" ["a" =: s "A", "b" =: s "B"] "&a=A&b=B"
 
-    -- TODO: Test matching on undefined values.
-    -- matchTest "{a,b}" ["a" =: s "A"] "A"
+    matchTest "{a,b}" ["a" =: s "A"] "A"
+    matchTest "{a,b,c}" ["a" =: s "A"] "A"
+    matchTest "{a,b,c}" ["a" =: s "A", "b" =: s "B"] "A,B"
+    matchTest "{a}{a,b}" ["b" =: s "B"] "B"
+    matchTest "{a}{a,b,c}" ["b" =: s "B"] "B"
+    matchTest "{a,b}{a,b,c}" ["c" =: s "C"] "C"
+    matchTest "{b}{a,b,c}" ["a" =: s "A", "c" =: s "C"] "A,C"
+    matchTest "{a}{a,b,c}" ["b" =: s "B", "c" =: s "C"] "B,C"
 
     -- TODO: Test matching on explode modifier.
     -- matchTest "{a*}" ["a" =: s "A"] "A"

@@ -93,18 +93,31 @@ vars vs m c f =
   let
     ctx = case m of
       Nothing -> id
-      Just o -> \x ->
-        ReadP.option
-            ((\v -> (Variable.name v, Match.Undefined)) <$> NonEmpty.toList vs)
-          $ char_ o
-          *> x
-  in
-    ctx
-    . fmap mconcat
-    . sequence
-    . List.intersperse (mempty <$ char_ c)
-    . fmap f
-    $ NonEmpty.toList vs
+      Just o -> \x -> ReadP.option (undef <$> NonEmpty.toList vs) $ do
+        char_ o
+        x
+  in ctx . vars' c f $ NonEmpty.toList vs
+
+vars'
+  :: Char
+  -> (Variable.Variable -> ReadP.ReadP [(Name.Name, Match.Match)])
+  -> [Variable.Variable]
+  -> ReadP.ReadP [(Name.Name, Match.Match)]
+vars' c f vs = case vs of
+  [] -> pure []
+  v : ws ->
+    let
+      this = do
+        x <- f v
+        xs <- ReadP.option (undef <$> ws) $ do
+          char_ c
+          vars' c f ws
+        pure $ x <> xs
+      that = (undef v :) <$> vars' c f ws
+    in this ReadP.+++ that
+
+undef :: Variable.Variable -> (Name.Name, Match.Match)
+undef v = (Variable.name v, Match.Undefined)
 
 char_ :: Char -> ReadP.ReadP ()
 char_ = Monad.void . ReadP.char
