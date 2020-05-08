@@ -16,7 +16,6 @@ import qualified Burrito.Internal.Type.Token as Token
 import qualified Burrito.Internal.Type.Value as Value
 import qualified Burrito.Internal.Type.Variable as Variable
 import qualified Control.Monad as Monad
-import qualified Data.Bifunctor as Bifunctor
 import qualified Data.ByteString as ByteString
 import qualified Data.Char as Char
 import qualified Data.List as List
@@ -37,10 +36,10 @@ match s =
     . template
 
 finalize :: [(Name.Name, Match.Match)] -> [(String, Value.Value)]
-finalize =
-  fmap
-    . Bifunctor.bimap (LazyText.unpack . Builder.toLazyText . Render.name)
-    $ \(Match.Defined v) -> v
+finalize = Maybe.mapMaybe $ \(n, m) -> case m of
+  Match.Defined v ->
+    Just (LazyText.unpack . Builder.toLazyText $ Render.name n, v)
+  Match.Undefined -> Nothing
 
 keepConsistent
   :: [(Name.Name, Match.Match)] -> Maybe [(Name.Name, Match.Match)]
@@ -85,16 +84,20 @@ variables op vs = case op of
   Operator.Solidus -> vars vs (Just '/') '/' $ variable Expand.isUnreserved
 
 vars
-  :: NonEmpty.NonEmpty a
+  :: NonEmpty.NonEmpty Variable.Variable
   -> Maybe Char
   -> Char
-  -> (a -> ReadP.ReadP [b])
-  -> ReadP.ReadP [b]
+  -> (Variable.Variable -> ReadP.ReadP [(Name.Name, Match.Match)])
+  -> ReadP.ReadP [(Name.Name, Match.Match)]
 vars vs m c f =
   let
     ctx = case m of
       Nothing -> id
-      Just o -> \x -> ReadP.option [] $ char_ o *> x
+      Just o -> \x ->
+        ReadP.option
+            ((\v -> (Variable.name v, Match.Undefined)) <$> NonEmpty.toList vs)
+          $ char_ o
+          *> x
   in
     ctx
     . fmap mconcat
