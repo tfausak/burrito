@@ -9,4 +9,4 @@ import qualified Data.Data as Data
 data Token
   = Expression Expression.Expression
   | Literal Literal.Literal
-  deriving (Data.Data, Eq, Show)
+  deriving (Data.Data, Eq, Ord, Show)

@@ -9,4 +9,4 @@ import qualified Data.Data as Data
 data Variable = Variable
   { name :: Name.Name
   , modifier :: Modifier.Modifier
-  } deriving (Data.Data, Eq, Show)
+  } deriving (Data.Data, Eq, Ord, Show)

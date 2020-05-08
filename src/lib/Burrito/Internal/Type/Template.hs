@@ -7,4 +7,4 @@ import qualified Data.Data as Data
 
 newtype Template = Template
   { tokens :: [Token.Token]
-  } deriving (Data.Data, Eq, Show)
+  } deriving (Data.Data, Eq, Ord, Show)

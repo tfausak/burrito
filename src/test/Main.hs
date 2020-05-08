@@ -8,6 +8,7 @@ where
 
 import qualified Burrito
 import qualified Burrito.Internal.Parse as Parse
+import qualified Burrito.Internal.Render as Render
 import qualified Burrito.Internal.Type.Case as Case
 import qualified Burrito.Internal.Type.Character as Character
 import qualified Burrito.Internal.Type.Digit as Digit
@@ -20,10 +21,14 @@ import qualified Burrito.Internal.Type.Name as Name
 import qualified Burrito.Internal.Type.Operator as Operator
 import qualified Burrito.Internal.Type.Template as Template
 import qualified Burrito.Internal.Type.Token as Token
+import qualified Burrito.Internal.Type.Value as Value
 import qualified Burrito.Internal.Type.Variable as Variable
 import qualified Control.Monad as Monad
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Set as Set
 import qualified Data.String as String
+import qualified Data.Text.Lazy as LazyText
+import qualified Data.Text.Lazy.Builder as Builder
 import qualified GHC.Stack as Stack
 import qualified Test.Hspec as Hspec
 import qualified Test.Hspec.QuickCheck as Hspec
@@ -32,8 +37,9 @@ import qualified Test.QuickCheck as QC
 main :: IO ()
 main = Hspec.hspec . Hspec.describe "Burrito" $ do
 
-  mapM_ (\(index, test) -> Hspec.it (show index) $ runTest test)
-    $ zip [0 :: Int ..] tests
+  Monad.forM_ tests $ \test ->
+    Hspec.it (show (testInput test, unwrapOutput $ testOutput test))
+      $ runTest test
 
   Hspec.describe "match" $ do
     let
@@ -43,7 +49,7 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
         -> [(String, Burrito.Value)]
         -> String
         -> Hspec.Spec
-      matchTest input values output = Hspec.it "" $ do
+      matchTest input values output = Hspec.it (show (input, output)) $ do
         template <- maybe (fail "invalid Template") pure $ Burrito.parse input
         let matches = Burrito.match output template
         matches `Hspec.shouldSatisfy` elem values
@@ -1158,9 +1164,56 @@ runTest test =
     (Nothing, Just _) -> Hspec.expectationFailure "should have parsed"
     (Just _, Nothing) -> Hspec.expectationFailure "should not have parsed"
     (Just template, Just expected) -> do
-      let actual = Burrito.expand (testValues test) template
+      let
+        values = testValues test
+        actual = Burrito.expand values template
       actual `Hspec.shouldBe` expected
       Burrito.parse (Burrito.render template) `Hspec.shouldBe` Just template
+      let relevant = keepRelevant (templateVariables template) values
+      Monad.when (isMatchable template relevant) $ do
+        let matches = Burrito.match expected template
+        print (testInput test, testOutput test, length matches)
+        Monad.unless (elem relevant matches) $ fail $ show test
+
+isMatchable :: Template.Template -> [(String, Burrito.Value)] -> Bool
+isMatchable template values =
+  let variables = templateVariables template
+  in
+    (length variables < 1)
+    && all (isNone . Variable.modifier) variables
+    && all (isString . snd) values
+
+isString :: Burrito.Value -> Bool
+isString value = case value of
+  Value.String _ -> True
+  _ -> False
+
+isNone :: Modifier.Modifier -> Bool
+isNone modifier = case modifier of
+  Modifier.None -> True
+  _ -> False
+
+keepRelevant
+  :: Set.Set Variable.Variable
+  -> [(String, Burrito.Value)]
+  -> [(String, Burrito.Value)]
+keepRelevant variables =
+  let
+    names = Set.map
+      (LazyText.unpack . Builder.toLazyText . Render.name . Variable.name)
+      variables
+  in filter (flip Set.member names . fst)
+
+templateVariables :: Template.Template -> Set.Set Variable.Variable
+templateVariables =
+  Set.fromList
+    . concatMap
+        (\token -> case token of
+          Token.Expression expression ->
+            NonEmpty.toList $ Expression.variables expression
+          Token.Literal _ -> []
+        )
+    . Template.tokens
 
 newtype Output = Output
   { unwrapOutput :: Maybe String

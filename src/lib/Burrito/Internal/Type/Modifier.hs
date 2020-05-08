@@ -9,4 +9,4 @@ data Modifier
   = Asterisk
   | Colon MaxLength.MaxLength
   | None
-  deriving (Data.Data, Eq, Show)
+  deriving (Data.Data, Eq, Ord, Show)

@@ -24,7 +24,7 @@ data Digit
   | OxD Case.Case
   | OxE Case.Case
   | OxF Case.Case
-  deriving (Data.Data, Eq, Show)
+  deriving (Data.Data, Eq, Ord, Show)
 
 fromChar :: Char -> Maybe Digit
 fromChar x = case x of

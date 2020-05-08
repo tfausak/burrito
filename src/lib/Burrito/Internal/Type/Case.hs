@@ -7,4 +7,4 @@ import qualified Data.Data as Data
 data Case
   = Lower
   | Upper
-  deriving (Data.Data, Eq, Show)
+  deriving (Data.Data, Eq, Ord, Show)

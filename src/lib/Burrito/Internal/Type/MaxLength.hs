@@ -6,4 +6,4 @@ import qualified Data.Data as Data
 
 newtype MaxLength = MaxLength
   { count :: Int
-  } deriving (Data.Data, Eq, Show)
+  } deriving (Data.Data, Eq, Ord, Show)

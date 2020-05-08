@@ -10,4 +10,4 @@ import qualified Data.List.NonEmpty as NonEmpty
 data Expression = Expression
   { operator :: Operator.Operator
   , variables :: NonEmpty.NonEmpty Variable.Variable
-  } deriving (Data.Data, Eq, Show)
+  } deriving (Data.Data, Eq, Ord, Show)

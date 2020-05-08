@@ -8,4 +8,4 @@ import qualified Data.List.NonEmpty as NonEmpty
 
 newtype Name = Name
   { fields :: NonEmpty.NonEmpty Field.Field
-  } deriving (Data.Data, Eq, Show)
+  } deriving (Data.Data, Eq, Ord, Show)

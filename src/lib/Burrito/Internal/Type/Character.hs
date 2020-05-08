@@ -8,4 +8,4 @@ import qualified Data.Data as Data
 data Character tag
   = Encoded Digit.Digit Digit.Digit
   | Unencoded Char
-  deriving (Data.Data, Eq, Show)
+  deriving (Data.Data, Eq, Ord, Show)
