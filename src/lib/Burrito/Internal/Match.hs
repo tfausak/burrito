@@ -23,7 +23,6 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
-import qualified Data.Text.Encoding.Error as Text
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Text.Lazy.Builder as Builder
 import qualified Text.ParserCombinators.ReadP as ReadP
@@ -154,12 +153,13 @@ many :: ReadP.ReadP a -> ReadP.ReadP [a]
 many p = ((:) <$> p <*> many p) ReadP.+++ pure []
 
 someEncodedCharacters :: ReadP.ReadP Text.Text
-someEncodedCharacters =
-  Text.decodeUtf8With Text.lenientDecode
+someEncodedCharacters = do
+  xs <- some anEncodedCharacter
+  either (fail . show) pure
+    . Text.decodeUtf8'
     . ByteString.pack
     . fmap (uncurry Digit.toWord8)
-    . NonEmpty.toList
-    <$> some anEncodedCharacter
+    $ NonEmpty.toList xs
 
 some :: ReadP.ReadP a -> ReadP.ReadP (NonEmpty.NonEmpty a)
 some p = (NonEmpty.:|) <$> p <*> many p
