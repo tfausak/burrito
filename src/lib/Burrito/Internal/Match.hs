@@ -92,10 +92,15 @@ vars vs m c f =
   let
     ctx = case m of
       Nothing -> id
-      Just o -> \x -> ReadP.option (undef <$> NonEmpty.toList vs) $ do
+      Just o -> \p -> ReadP.option (undef <$> NonEmpty.toList vs) $ do
         char_ o
-        x
+        xs <- p
+        Monad.guard $ any (not . isUndefined) xs
+        pure xs
   in ctx . vars' c f $ NonEmpty.toList vs
+
+isUndefined :: (Name.Name, Match.Match) -> Bool
+isUndefined = (== Match.Undefined) . snd
 
 vars'
   :: Char

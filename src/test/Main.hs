@@ -21,6 +21,7 @@ import qualified Burrito.Internal.Type.Operator as Operator
 import qualified Burrito.Internal.Type.Template as Template
 import qualified Burrito.Internal.Type.Token as Token
 import qualified Burrito.Internal.Type.Variable as Variable
+import qualified Control.Monad as Monad
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.String as String
 import qualified GHC.Stack as Stack
@@ -44,7 +45,12 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
         -> Hspec.Spec
       matchTest input values output = Hspec.it "" $ do
         template <- maybe (fail "invalid Template") pure $ Burrito.parse input
-        Burrito.match output template `Hspec.shouldSatisfy` elem values
+        let matches = Burrito.match output template
+        matches `Hspec.shouldSatisfy` elem values
+        Monad.forM_ matches $ \match -> do
+          let it = Burrito.expand match template
+          Monad.when (it /= output) . fail $ show
+            (input, values, output, matches, match, it)
 
     matchTest "" [] ""
     matchTest "a" [] "a"
@@ -76,7 +82,6 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
 
     matchTest "{+a}" ["a" =: s "%"] "%25"
     matchTest "{+a}" ["a" =: s "/"] "/"
-    matchTest "{+a}" ["a" =: s "/"] "%2F"
 
     matchTest "{#a}" [] ""
     matchTest "{#a}" ["a" =: s ""] "#"
