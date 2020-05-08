@@ -7,6 +7,7 @@ import qualified Burrito.Internal.Type.Character as Character
 import qualified Burrito.Internal.Type.Digit as Digit
 import qualified Burrito.Internal.Type.Expression as Expression
 import qualified Burrito.Internal.Type.Literal as Literal
+import qualified Burrito.Internal.Type.Match as Match
 import qualified Burrito.Internal.Type.Modifier as Modifier
 import qualified Burrito.Internal.Type.Name as Name
 import qualified Burrito.Internal.Type.Operator as Operator
@@ -30,17 +31,19 @@ import qualified Text.ParserCombinators.ReadP as ReadP
 
 match :: String -> Template.Template -> [[(String, Value.Value)]]
 match s =
-  fmap renderNames
+  fmap finalize
     . Maybe.mapMaybe (keepConsistent . fst)
     . flip ReadP.readP_to_S s
     . template
 
-renderNames :: [(Name.Name, Value.Value)] -> [(String, Value.Value)]
-renderNames =
-  fmap . Bifunctor.first $ LazyText.unpack . Builder.toLazyText . Render.name
+finalize :: [(Name.Name, Match.Match)] -> [(String, Value.Value)]
+finalize =
+  fmap
+    . Bifunctor.bimap (LazyText.unpack . Builder.toLazyText . Render.name)
+    $ \(Match.Defined v) -> v
 
 keepConsistent
-  :: [(Name.Name, Value.Value)] -> Maybe [(Name.Name, Value.Value)]
+  :: [(Name.Name, Match.Match)] -> Maybe [(Name.Name, Match.Match)]
 keepConsistent xs = case xs of
   [] -> Just xs
   x@(k, v) : ys -> do
@@ -48,24 +51,24 @@ keepConsistent xs = case xs of
     Monad.guard $ all ((== v) . snd) ts
     (x :) <$> keepConsistent fs
 
-template :: Template.Template -> ReadP.ReadP [(Name.Name, Value.Value)]
+template :: Template.Template -> ReadP.ReadP [(Name.Name, Match.Match)]
 template x = do
   xs <- fmap mconcat . traverse token $ Template.tokens x
   ReadP.eof
   pure xs
 
-token :: Token.Token -> ReadP.ReadP [(Name.Name, Value.Value)]
+token :: Token.Token -> ReadP.ReadP [(Name.Name, Match.Match)]
 token x = case x of
   Token.Expression y -> expression y
   Token.Literal y -> [] <$ literal y
 
-expression :: Expression.Expression -> ReadP.ReadP [(Name.Name, Value.Value)]
+expression :: Expression.Expression -> ReadP.ReadP [(Name.Name, Match.Match)]
 expression x = variables (Expression.operator x) (Expression.variables x)
 
 variables
   :: Operator.Operator
   -> NonEmpty.NonEmpty Variable.Variable
-  -> ReadP.ReadP [(Name.Name, Value.Value)]
+  -> ReadP.ReadP [(Name.Name, Match.Match)]
 variables op vs = case op of
   Operator.Ampersand -> vars vs (Just '&') '&' varEq
   Operator.FullStop -> vars vs (Just '.') '.' $ variable Expand.isUnreserved
@@ -76,7 +79,7 @@ variables op vs = case op of
   Operator.Semicolon -> vars vs (Just ';') ';' $ \v -> do
     let n = Variable.name v
     name n
-    ReadP.option [(n, Value.String Text.empty)] $ do
+    ReadP.option [(n, Match.Defined $ Value.String Text.empty)] $ do
       char_ '='
       variable Expand.isUnreserved v
   Operator.Solidus -> vars vs (Just '/') '/' $ variable Expand.isUnreserved
@@ -103,7 +106,7 @@ vars vs m c f =
 char_ :: Char -> ReadP.ReadP ()
 char_ = Monad.void . ReadP.char
 
-varEq :: Variable.Variable -> ReadP.ReadP [(Name.Name, Value.Value)]
+varEq :: Variable.Variable -> ReadP.ReadP [(Name.Name, Match.Match)]
 varEq v = do
   name $ Variable.name v
   char_ '='
@@ -120,10 +123,10 @@ name =
 variable
   :: (Char -> Bool)
   -> Variable.Variable
-  -> ReadP.ReadP [(Name.Name, Value.Value)]
+  -> ReadP.ReadP [(Name.Name, Match.Match)]
 variable f x = case Variable.modifier x of
   Modifier.None -> do
-    v <- Value.String <$> manyCharacters f
+    v <- Match.Defined . Value.String <$> manyCharacters f
     pure [(Variable.name x, v)]
   _ -> fail "TODO: modifiers"
 

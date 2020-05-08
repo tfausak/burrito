@@ -54,6 +54,7 @@ library
     Burrito.Internal.Type.Expression
     Burrito.Internal.Type.Field
     Burrito.Internal.Type.Literal
+    Burrito.Internal.Type.Match
     Burrito.Internal.Type.MaxLength
     Burrito.Internal.Type.Modifier
     Burrito.Internal.Type.Name
