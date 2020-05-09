@@ -2,10 +2,12 @@
 
 module Burrito.Internal.Type.Match where
 
-import qualified Burrito.Internal.Type.Value as Value
+import qualified Burrito.Internal.Type.MaxLength as MaxLength
 import qualified Data.Data as Data
+import qualified Data.Text as Text
 
 data Match
-  = Defined Value.Value
+  = Defined Text.Text
+  | Prefix MaxLength.MaxLength Text.Text
   | Undefined
   deriving (Data.Data, Eq, Ord, Show)

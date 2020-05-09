@@ -26,8 +26,11 @@ import qualified Burrito.Internal.Type.Variable as Variable
 import qualified Control.Monad as Monad
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Map as Map
+import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import qualified Data.String as String
+import qualified Data.Text as Text
 import qualified GHC.Stack as Stack
 import qualified Test.Hspec as Hspec
 import qualified Test.Hspec.QuickCheck as Hspec
@@ -142,11 +145,10 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     matchTest "{b}{a,b,c}" ["a" =: s "A", "c" =: s "C"] "A,C"
     matchTest "{a}{a,b,c}" ["b" =: s "B", "c" =: s "C"] "B,C"
 
+    matchTest "{a:1}/{a}" ["a" =: s "AB"] "A/AB"
+
     -- TODO: Test matching on explode modifier.
     -- matchTest "{a*}" ["a" =: s "A"] "A"
-
-    -- TODO: Test matching on prefix modifier.
-    -- matchTest "{a:1}/{a}" ["a" =: s "AB"] "A/AB"
 
     -- TODO: Test matching on lists.
     -- matchTest "{a}" ["a" =: l ["A", "B"]] "A,B"
@@ -1175,7 +1177,7 @@ runTest test =
 
 isMatchable :: Template.Template -> [(String, Burrito.Value)] -> Bool
 isMatchable template values =
-  all (isNone . Variable.modifier) (templateVariables template)
+  (not . any (isAsterisk . Variable.modifier) $ templateVariables template)
     && all (isString . snd) values
 
 isString :: Burrito.Value -> Bool
@@ -1183,9 +1185,9 @@ isString value = case value of
   Value.String _ -> True
   _ -> False
 
-isNone :: Modifier.Modifier -> Bool
-isNone modifier = case modifier of
-  Modifier.None -> True
+isAsterisk :: Modifier.Modifier -> Bool
+isAsterisk modifier = case modifier of
+  Modifier.Asterisk -> True
   _ -> False
 
 keepRelevant
@@ -1194,9 +1196,29 @@ keepRelevant
   -> [(String, Burrito.Value)]
 keepRelevant variables =
   let
-    names =
-      Set.map (Render.builderToString . Render.name . Variable.name) variables
-  in filter (flip Set.member names . fst)
+    vs =
+      Map.fromListWith
+          (\mx my -> case (mx, my) of
+            (Just x, Just y) -> Just $ max x y
+            _ -> Nothing
+          )
+        . fmap
+            (\v ->
+              ( Render.builderToString . Render.name $ Variable.name v
+              , case Variable.modifier v of
+                Modifier.Colon n -> Just $ MaxLength.count n
+                _ -> Nothing
+              )
+            )
+        $ Set.toList variables
+  in
+    Maybe.mapMaybe $ \(k, v) -> do
+      m <- Map.lookup k vs
+      pure . (,) k $ case m of
+        Nothing -> v
+        Just n -> case v of
+          Value.String t -> Value.String $ Text.take n t
+          _ -> v
 
 templateVariables :: Template.Template -> Set.Set Variable.Variable
 templateVariables =

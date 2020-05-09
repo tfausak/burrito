@@ -8,6 +8,7 @@ import qualified Burrito.Internal.Type.Digit as Digit
 import qualified Burrito.Internal.Type.Expression as Expression
 import qualified Burrito.Internal.Type.Literal as Literal
 import qualified Burrito.Internal.Type.Match as Match
+import qualified Burrito.Internal.Type.MaxLength as MaxLength
 import qualified Burrito.Internal.Type.Modifier as Modifier
 import qualified Burrito.Internal.Type.Name as Name
 import qualified Burrito.Internal.Type.Operator as Operator
@@ -34,17 +35,38 @@ match s =
 
 finalize :: [(Name.Name, Match.Match)] -> [(String, Value.Value)]
 finalize = Maybe.mapMaybe $ \(n, m) -> case m of
-  Match.Defined v -> Just (Render.builderToString $ Render.name n, v)
+  Match.Defined v ->
+    Just (Render.builderToString $ Render.name n, Value.String v)
+  Match.Prefix _ v ->
+    Just (Render.builderToString $ Render.name n, Value.String v)
   Match.Undefined -> Nothing
 
 keepConsistent
   :: [(Name.Name, Match.Match)] -> Maybe [(Name.Name, Match.Match)]
 keepConsistent xs = case xs of
   [] -> Just xs
-  x@(k, v) : ys -> do
+  (k, v) : ys -> do
     let (ts, fs) = List.partition ((== k) . fst) ys
-    Monad.guard $ all ((== v) . snd) ts
-    (x :) <$> keepConsistent fs
+    w <- combine v $ fmap snd ts
+    ((k, w) :) <$> keepConsistent fs
+
+combine :: Match.Match -> [Match.Match] -> Maybe Match.Match
+combine x ys = case ys of
+  [] -> Just x
+  y : zs -> case x of
+    Match.Defined t -> case y of
+      Match.Defined u | t == u -> combine x zs
+      Match.Prefix m u | Text.take (MaxLength.count m) t == u -> combine x zs
+      _ -> Nothing
+    Match.Prefix n t -> case y of
+      Match.Defined u | t == Text.take (MaxLength.count n) u -> combine y zs
+      Match.Prefix m u
+        | let c = MaxLength.count (min n m) in Text.take c t == Text.take c u
+        -> combine (if m > n then y else x) zs
+      _ -> Nothing
+    Match.Undefined -> case y of
+      Match.Undefined -> combine x zs
+      _ -> Nothing
 
 template :: Template.Template -> ReadP.ReadP [(Name.Name, Match.Match)]
 template x = do
@@ -74,7 +96,7 @@ variables op vs = case op of
   Operator.Semicolon -> vars vs (Just ';') ';' $ \v -> do
     let n = Variable.name v
     name n
-    ReadP.option [(n, Match.Defined $ Value.String Text.empty)] $ do
+    ReadP.option [(n, Match.Defined Text.empty)] $ do
       char_ '='
       variable Expand.isUnreserved v
   Operator.Solidus -> vars vs (Just '/') '/' $ variable Expand.isUnreserved
@@ -136,11 +158,12 @@ variable
   :: (Char -> Bool)
   -> Variable.Variable
   -> ReadP.ReadP [(Name.Name, Match.Match)]
-variable f x = case Variable.modifier x of
-  Modifier.None -> do
-    v <- Match.Defined . Value.String <$> manyCharacters f
-    pure [(Variable.name x, v)]
-  _ -> fail "TODO: modifiers"
+variable f x = do
+  v <- case Variable.modifier x of
+    Modifier.Asterisk -> ReadP.pfail
+    Modifier.None -> Match.Defined <$> manyCharacters f
+    Modifier.Colon n -> Match.Prefix n <$> manyCharacters f
+  pure [(Variable.name x, v)]
 
 manyCharacters :: (Char -> Bool) -> ReadP.ReadP Text.Text
 manyCharacters f = do
