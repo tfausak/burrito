@@ -2,8 +2,8 @@
 --
 -- According to [RFC 6570](https://tools.ietf.org/html/rfc6570): "A URI
 -- Template is a compact sequence of characters for describing a range of
--- Uniform Resource Identifiers through variable expansion." Burrito implements
--- URI templates according to the specification in that RFC.
+  -- Uniform Resource Identifiers through variable expansion." Burrito
+  -- implements URI templates according to the specification in that RFC.
 --
 -- The term "uniform resource identifiers" (URI) is often used interchangeably
 -- with other related terms like "internationalized resource identifier" (IRI),
@@ -30,6 +30,8 @@ module Burrito
   ( Parse.parse
   , Render.render
   , Expand.expand
+  , Expand.expandWith
+  , Match.match
   , TH.uriTemplate
   , Template.Template
   , Value.Value
@@ -39,24 +41,26 @@ module Burrito
   )
 where
 
-import qualified Burrito.Expand as Expand
-import qualified Burrito.Parse as Parse
-import qualified Burrito.Render as Render
-import qualified Burrito.TH as TH
-import qualified Burrito.Type.Template as Template
-import qualified Burrito.Type.Value as Value
-
+import qualified Burrito.Internal.Expand as Expand
+import qualified Burrito.Internal.Match as Match
+import qualified Burrito.Internal.Parse as Parse
+import qualified Burrito.Internal.Render as Render
+import qualified Burrito.Internal.TH as TH
+import qualified Burrito.Internal.Type.Template as Template
+import qualified Burrito.Internal.Type.Value as Value
+import qualified Data.Bifunctor as Bifunctor
+import qualified Data.Map as Map
+import qualified Data.Text as Text
 
 -- | Constructs a string value.
 stringValue :: String -> Value.Value
-stringValue = Value.String
-
+stringValue = Value.String . Text.pack
 
 -- | Constructs a list value.
 listValue :: [String] -> Value.Value
-listValue = Value.List
-
+listValue = Value.List . fmap Text.pack
 
 -- | Constructs a dictionary value.
 dictionaryValue :: [(String, String)] -> Value.Value
-dictionaryValue = Value.Dictionary
+dictionaryValue =
+  Value.Dictionary . Map.fromList . fmap (Bifunctor.bimap Text.pack Text.pack)

@@ -34,31 +34,43 @@ source-repository head
 library
   build-depends:
     base >= 4.12.0 && < 4.15
+    , bytestring >= 0.10.8 && < 0.11
+    , containers >= 0.6.0 && < 0.7
+    , parsec >= 3.1.14 && < 3.2
     , template-haskell >= 2.14.0 && < 2.17
+    , text >= 1.2.3 && < 1.3
+    , transformers >= 0.5.6 && < 0.6
   default-language: Haskell98
   exposed-modules:
     Burrito
-    Burrito.Expand
-    Burrito.Parse
-    Burrito.Render
-    Burrito.TH
-    Burrito.Type.Expression
-    Burrito.Type.LitChar
-    Burrito.Type.Literal
-    Burrito.Type.Modifier
-    Burrito.Type.Name
-    Burrito.Type.NonEmpty
-    Burrito.Type.Operator
-    Burrito.Type.Template
-    Burrito.Type.Token
-    Burrito.Type.Value
-    Burrito.Type.VarChar
-    Burrito.Type.Variable
+    Burrito.Internal.Expand
+    Burrito.Internal.Match
+    Burrito.Internal.Parse
+    Burrito.Internal.Render
+    Burrito.Internal.TH
+    Burrito.Internal.Type.Case
+    Burrito.Internal.Type.Character
+    Burrito.Internal.Type.Digit
+    Burrito.Internal.Type.Expression
+    Burrito.Internal.Type.Field
+    Burrito.Internal.Type.Literal
+    Burrito.Internal.Type.Match
+    Burrito.Internal.Type.MaxLength
+    Burrito.Internal.Type.Modifier
+    Burrito.Internal.Type.Name
+    Burrito.Internal.Type.Operator
+    Burrito.Internal.Type.Template
+    Burrito.Internal.Type.Token
+    Burrito.Internal.Type.Value
+    Burrito.Internal.Type.Variable
   ghc-options:
     -Weverything
     -Wno-all-missed-specialisations
     -Wno-implicit-prelude
+    -Wno-missing-export-lists
     -Wno-missing-exported-signatures
+    -Wno-missing-local-signatures
+    -Wno-monomorphism-restriction
     -Wno-safe
   hs-source-dirs: src/lib
 
@@ -75,8 +87,10 @@ test-suite test
   build-depends:
     base -any
     , burrito -any
+    , containers -any
     , hspec >= 2.7.1 && < 2.8
     , QuickCheck >= 2.13.2 && < 2.14
+    , text -any
   default-language: Haskell98
   hs-source-dirs: src/test
   main-is: Main.hs
