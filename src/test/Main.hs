@@ -24,6 +24,7 @@ import qualified Burrito.Internal.Type.Token as Token
 import qualified Burrito.Internal.Type.Value as Value
 import qualified Burrito.Internal.Type.Variable as Variable
 import qualified Control.Monad as Monad
+import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Set as Set
 import qualified Data.String as String
@@ -152,8 +153,6 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
 
     -- TODO: Test matching on dictionaries.
     -- matchTest "{a}" ["a" =: d ["k" =: "v"]] "k,v"
-
-    -- TODO: Enhance normal tests to round-trip matching.
 
   Hspec.describe "uriTemplate"
     . Hspec.it "works as an expression"
@@ -1167,17 +1166,16 @@ runTest test =
         actual = Burrito.expand values template
       actual `Hspec.shouldBe` expected
       Burrito.parse (Burrito.render template) `Hspec.shouldBe` Just template
-      let relevant = keepRelevant (templateVariables template) values
+      let
+        relevant =
+          List.sort $ keepRelevant (templateVariables template) values
       Monad.when (isMatchable template relevant) $ do
-        let matches = Burrito.match expected template
-        Monad.unless (elem relevant matches) . fail $ show test
+        let matches = List.sort <$> Burrito.match expected template
+        matches `Hspec.shouldSatisfy` elem relevant
 
 isMatchable :: Template.Template -> [(String, Burrito.Value)] -> Bool
 isMatchable template values =
-  let variables = templateVariables template
-  in
-    (length variables <= 1)
-    && all (isNone . Variable.modifier) variables
+  all (isNone . Variable.modifier) (templateVariables template)
     && all (isString . snd) values
 
 isString :: Burrito.Value -> Bool
