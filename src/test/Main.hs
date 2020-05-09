@@ -1170,14 +1170,13 @@ runTest test =
       let relevant = keepRelevant (templateVariables template) values
       Monad.when (isMatchable template relevant) $ do
         let matches = Burrito.match expected template
-        print (testInput test, testOutput test, length matches)
         Monad.unless (elem relevant matches) . fail $ show test
 
 isMatchable :: Template.Template -> [(String, Burrito.Value)] -> Bool
 isMatchable template values =
   let variables = templateVariables template
   in
-    (length variables < 1)
+    (length variables <= 1)
     && all (isNone . Variable.modifier) variables
     && all (isString . snd) values
 

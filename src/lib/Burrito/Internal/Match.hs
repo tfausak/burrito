@@ -85,7 +85,7 @@ vars
   -> Char
   -> (Variable.Variable -> ReadP.ReadP [(Name.Name, Match.Match)])
   -> ReadP.ReadP [(Name.Name, Match.Match)]
-vars vs m c f =
+vars vs m c f = do
   let
     ctx = case m of
       Nothing -> id
@@ -94,7 +94,7 @@ vars vs m c f =
         xs <- p
         Monad.guard . not $ all isUndefined xs
         pure xs
-  in ctx . vars' c f $ NonEmpty.toList vs
+  ctx . vars' c f $ NonEmpty.toList vs
 
 isUndefined :: (Name.Name, Match.Match) -> Bool
 isUndefined = (== Match.Undefined) . snd
@@ -143,11 +143,11 @@ variable f x = case Variable.modifier x of
   _ -> fail "TODO: modifiers"
 
 manyCharacters :: (Char -> Bool) -> ReadP.ReadP Text.Text
-manyCharacters f =
-  mconcat <$> many (someEncodedCharacters ReadP.<++ someUnencodedCharacters f)
-
-many :: ReadP.ReadP a -> ReadP.ReadP [a]
-many p = ((:) <$> p <*> many p) ReadP.+++ pure []
+manyCharacters f = do
+  let
+    f1 = (:) <$> someEncodedCharacters <*> ReadP.option [] f2
+    f2 = (:) <$> someUnencodedCharacters f <*> ReadP.option [] f1
+  fmap mconcat . ReadP.option [] $ f1 ReadP.<++ f2
 
 someEncodedCharacters :: ReadP.ReadP Text.Text
 someEncodedCharacters = do
@@ -159,11 +159,12 @@ someEncodedCharacters = do
     $ NonEmpty.toList xs
 
 some :: ReadP.ReadP a -> ReadP.ReadP (NonEmpty.NonEmpty a)
-some p = (NonEmpty.:|) <$> p <*> many p
+some p = (NonEmpty.:|) <$> p <*> ReadP.many p
 
 someUnencodedCharacters :: (Char -> Bool) -> ReadP.ReadP Text.Text
-someUnencodedCharacters f =
-  Text.pack . NonEmpty.toList <$> some (ReadP.satisfy f)
+someUnencodedCharacters f = do
+  xs <- some $ ReadP.satisfy f
+  pure . Text.pack $ NonEmpty.toList xs
 
 anEncodedCharacter :: ReadP.ReadP (Digit.Digit, Digit.Digit)
 anEncodedCharacter = do
