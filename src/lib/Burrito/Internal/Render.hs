@@ -19,7 +19,10 @@ import qualified Data.Text.Lazy as LazyText
 import qualified Data.Text.Lazy.Builder as Builder
 
 render :: Template.Template -> String
-render = LazyText.unpack . Builder.toLazyText . template
+render = builderToString . template
+
+builderToString :: Builder.Builder -> String
+builderToString = LazyText.unpack . Builder.toLazyText
 
 template :: Template.Template -> Builder.Builder
 template = foldMap token . Template.tokens

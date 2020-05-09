@@ -27,8 +27,6 @@ import qualified Control.Monad as Monad
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Set as Set
 import qualified Data.String as String
-import qualified Data.Text.Lazy as LazyText
-import qualified Data.Text.Lazy.Builder as Builder
 import qualified GHC.Stack as Stack
 import qualified Test.Hspec as Hspec
 import qualified Test.Hspec.QuickCheck as Hspec
@@ -1173,7 +1171,7 @@ runTest test =
       Monad.when (isMatchable template relevant) $ do
         let matches = Burrito.match expected template
         print (testInput test, testOutput test, length matches)
-        Monad.unless (elem relevant matches) $ fail $ show test
+        Monad.unless (elem relevant matches) . fail $ show test
 
 isMatchable :: Template.Template -> [(String, Burrito.Value)] -> Bool
 isMatchable template values =
@@ -1199,9 +1197,8 @@ keepRelevant
   -> [(String, Burrito.Value)]
 keepRelevant variables =
   let
-    names = Set.map
-      (LazyText.unpack . Builder.toLazyText . Render.name . Variable.name)
-      variables
+    names =
+      Set.map (Render.builderToString . Render.name . Variable.name) variables
   in filter (flip Set.member names . fst)
 
 templateVariables :: Template.Template -> Set.Set Variable.Variable

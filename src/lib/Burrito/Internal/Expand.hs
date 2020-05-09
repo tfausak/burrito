@@ -32,7 +32,7 @@ expand :: [(String, Value.Value)] -> Template.Template -> String
 expand values =
   let m = Map.mapKeys Text.pack $ Map.fromList values
   in
-    LazyText.unpack . Builder.toLazyText . Identity.runIdentity . expandWith
+    Render.builderToString . Identity.runIdentity . expandWith
       (pure . flip Map.lookup m)
 
 expandWith

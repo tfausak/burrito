@@ -23,8 +23,6 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
-import qualified Data.Text.Lazy as LazyText
-import qualified Data.Text.Lazy.Builder as Builder
 import qualified Text.ParserCombinators.ReadP as ReadP
 
 match :: String -> Template.Template -> [[(String, Value.Value)]]
@@ -36,8 +34,7 @@ match s =
 
 finalize :: [(Name.Name, Match.Match)] -> [(String, Value.Value)]
 finalize = Maybe.mapMaybe $ \(n, m) -> case m of
-  Match.Defined v ->
-    Just (LazyText.unpack . Builder.toLazyText $ Render.name n, v)
+  Match.Defined v -> Just (Render.builderToString $ Render.name n, v)
   Match.Undefined -> Nothing
 
 keepConsistent
@@ -95,7 +92,7 @@ vars vs m c f =
       Just o -> \p -> ReadP.option (undef <$> NonEmpty.toList vs) $ do
         char_ o
         xs <- p
-        Monad.guard $ any (not . isUndefined) xs
+        Monad.guard . not $ all isUndefined xs
         pure xs
   in ctx . vars' c f $ NonEmpty.toList vs
 
@@ -133,12 +130,7 @@ varEq v = do
   variable Expand.isUnreserved v
 
 name :: Name.Name -> ReadP.ReadP ()
-name =
-  Monad.void
-    . ReadP.string
-    . LazyText.unpack
-    . Builder.toLazyText
-    . Render.name
+name = Monad.void . ReadP.string . Render.builderToString . Render.name
 
 variable
   :: (Char -> Bool)
