@@ -18,6 +18,15 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Text.Lazy.Builder as Builder
 
+-- | Renders a template back into a string. This is essentially the opposite of
+-- @parse@. Usually you'll want to use @expand@ to actually substitute
+-- variables in the template, but this can be useful for printing out the
+-- template itself
+--
+-- >>> render <$> parse "valid-template"
+-- Just "valid-template"
+-- >>> render <$> parse "{var}"
+-- Just "{var}"
 render :: Template.Template -> String
 render = builderToString . template
 

@@ -26,6 +26,33 @@ import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import qualified Text.ParserCombinators.ReadP as ReadP
 
+-- | Matches a string against a template. This is essentially the opposite of
+-- @expand@.
+--
+-- Since there isn't always one unique match, this function returns all the
+-- possibilities. It's up to you to select the one that makes the most sense,
+-- or to simply grab the first one if you don't care.
+--
+-- >>> match "" <$> parse "no-match"
+-- Just []
+-- >>> match "no-variables" <$> parse "no-variables"
+-- Just [[]]
+-- >>> match "1-match" <$> parse "{one}-match"
+-- Just [[("one",String "1")]]
+--
+-- Be warned that the number of possible matches can grow quickly if your
+-- template has variables next to each other without any separators.
+--
+-- >>> let Just template = parse "{a}{b}"
+-- >>> mapM_ print $ match "ab" template
+-- [("a",String "a"),("b",String "b")]
+-- [("a",String "ab"),("b",String "")]
+-- [("a",String "ab")]
+-- [("a",String ""),("b",String "ab")]
+-- [("b",String "ab")]
+--
+-- Matching supports everything /except/ explode modifiers (@{a*}@), list
+-- values, and dictionary values.
 match :: String -> Template.Template -> [[(String, Value.Value)]]
 match s =
   fmap finalize

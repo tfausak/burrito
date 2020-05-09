@@ -28,6 +28,16 @@ import qualified Data.Text.Encoding as Text
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Text.Lazy.Builder as Builder
 
+-- | Expands a template using the given values. Unlike parsing, expansion
+-- always succeeds. If no value is given for a variable, it will simply not
+-- appear in the output.
+--
+-- >>> expand [] <$> parse "valid-template"
+-- Just "valid-template"
+-- >>> expand [] <$> parse "template:{example}"
+-- Just "template:"
+-- >>> expand [("example", stringValue "true")] <$> parse "template:{example}"
+-- Just "template:true"
 expand :: [(String, Value.Value)] -> Template.Template -> String
 expand values =
   let m = Map.mapKeys Text.pack $ Map.fromList values
@@ -35,6 +45,27 @@ expand values =
     Render.builderToString . Identity.runIdentity . expandWith
       (pure . flip Map.lookup m)
 
+-- | This is like @expand@ except that it gives you more control over how
+-- variables are expanded. If you can, use @expand@. It's simpler.
+--
+-- Instead of passing in a static mapping form names to
+-- values, you pass in a function that is used to look up values on the fly.
+-- This can be useful if computing values takes a while or requires some impure
+-- actions.
+--
+-- >>> expandWith (\ x -> [Nothing, Just . stringValue $ unpack x]) <$> parse "template:{example}"
+-- Just ["template:","template:example"]
+-- >>> let Just template = parse "user={USER}"
+-- >>> expandWith (fmap (fmap stringValue) . lookupEnv . unpack) template
+-- "user=taylor"
+--
+-- Note that as the RFC specifies, the given function will be called at most
+-- once for each variable in the template.
+--
+-- >>> let Just template = parse "{a}{a}"
+-- >>> expandWith (\ x -> do { putStrLn $ "-- expanding " <> show x; pure . Just $ Burrito.stringValue "A" }) template
+-- -- expanding "a"
+-- "AA"
 expandWith
   :: Monad m
   => (Text.Text -> m (Maybe Value.Value))

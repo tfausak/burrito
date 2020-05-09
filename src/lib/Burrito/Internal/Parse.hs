@@ -20,6 +20,18 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Text.Parsec as Parsec
 import qualified Text.Read as Read
 
+-- | Attempts to parse a string as a URI template. If parsing fails, this will
+-- return @Nothing@. Otherwise it will return @Just@ the parsed template.
+--
+-- Parsing will usually succeed, but it can fail if the input string contains
+-- characters that are not valid in IRIs (like @^@) or if the input string
+-- contains an invalid template expression (like @{!}@). To include characters
+-- that aren't valid in IRIs, percent encode them (like @%5E@).
+--
+-- >>> parse "invalid template"
+-- Nothing
+-- >>> parse "valid-template"
+-- Just (Template ...)
 parse :: String -> Maybe Template.Template
 parse = either (const Nothing) Just . Parsec.parse template ""
 
