@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Burrito.Internal.Type.Token where
+module Burrito.Internal.Type.Token (Token(..)) where
 
 import qualified Burrito.Internal.Type.Expression as Expression
 import qualified Burrito.Internal.Type.Literal as Literal

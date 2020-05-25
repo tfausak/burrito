@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Burrito.Internal.Type.Expression where
+module Burrito.Internal.Type.Expression (Expression(..)) where
 
 import qualified Burrito.Internal.Type.Operator as Operator
 import qualified Burrito.Internal.Type.Variable as Variable

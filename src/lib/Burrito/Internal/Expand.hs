@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
+
 module Burrito.Internal.Expand where
 
 import qualified Burrito.Internal.Render as Render

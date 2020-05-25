@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Burrito.Internal.Type.Template where
+module Burrito.Internal.Type.Template (Template(..)) where
 
 import qualified Burrito.Internal.Type.Token as Token
 import qualified Data.Data as Data

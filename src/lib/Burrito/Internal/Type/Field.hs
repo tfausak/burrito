@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Burrito.Internal.Type.Field where
+module Burrito.Internal.Type.Field (Field(..)) where
 
 import qualified Burrito.Internal.Type.Character as Character
 import qualified Data.Data as Data

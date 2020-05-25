@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Burrito.Internal.Type.Match where
+module Burrito.Internal.Type.Match (Match(..)) where
 
 import qualified Burrito.Internal.Type.MaxLength as MaxLength
 import qualified Data.Data as Data

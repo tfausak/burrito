@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Burrito.Internal.Type.Digit where
+module Burrito.Internal.Type.Digit (Digit(..), fromChar, fromWord8, toWord8) where
 
 import qualified Burrito.Internal.Type.Case as Case
 import qualified Data.Bits as Bits
@@ -55,6 +55,7 @@ fromChar x = case x of
 fromWord8 :: Word.Word8 -> (Digit, Digit)
 fromWord8 x =
   let
+    f :: Word.Word8 -> Digit
     f y = case y of
       0x0 -> Ox0
       0x1 -> Ox1
@@ -78,6 +79,7 @@ fromWord8 x =
 toWord8 :: Digit -> Digit -> Word.Word8
 toWord8 x y =
   let
+    f :: Digit -> Word.Word8
     f z = case z of
       Ox0 -> 0x0
       Ox1 -> 0x1

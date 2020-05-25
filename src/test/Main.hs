@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-monomorphism-restriction #-}
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 

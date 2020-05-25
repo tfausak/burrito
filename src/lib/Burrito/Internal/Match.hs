@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
+
 module Burrito.Internal.Match where
 
 import qualified Burrito.Internal.Expand as Expand

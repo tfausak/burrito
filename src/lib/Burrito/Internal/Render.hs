@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
+
 module Burrito.Internal.Render where
 
 import qualified Burrito.Internal.Type.Case as Case

@@ -1,4 +1,4 @@
-module Burrito.Internal.TH where
+module Burrito.Internal.TH (uriTemplate) where
 
 import qualified Burrito.Internal.Parse as Parse
 import qualified Language.Haskell.TH.Quote as TH
