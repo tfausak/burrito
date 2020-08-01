@@ -95,7 +95,7 @@ test-suite test
     , burrito -any
     , containers -any
     , hspec >= 2.7.1 && < 2.8
-    , QuickCheck >= 2.13.2 && < 2.14
+    , QuickCheck >= 2.13.2 && < 2.15
     , text -any
   hs-source-dirs: src/test
   main-is: Main.hs
