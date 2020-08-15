@@ -28,7 +28,6 @@
 -- In short, use @parse@ to parse templates and @expand@ to render them.
 module Burrito
   ( Parse.parse
-  , Render.render
   , Expand.expand
   , Expand.expandWith
   , Match.match
@@ -44,7 +43,6 @@ where
 import qualified Burrito.Internal.Expand as Expand
 import qualified Burrito.Internal.Match as Match
 import qualified Burrito.Internal.Parse as Parse
-import qualified Burrito.Internal.Render as Render
 import qualified Burrito.Internal.TH as TH
 import qualified Burrito.Internal.Type.Template as Template
 import qualified Burrito.Internal.Type.Value as Value
