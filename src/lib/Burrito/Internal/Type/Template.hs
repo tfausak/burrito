@@ -10,8 +10,7 @@ import qualified Data.Text.Lazy.Builder as Builder
 -- | Represents a URI template.
 newtype Template = Template
   { tokens :: [Token.Token]
-  }
-  deriving (Data.Data, Eq, Ord)
+  } deriving (Data.Data, Eq, Ord)
 
 instance Show Template where
   show = render
