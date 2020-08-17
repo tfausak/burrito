@@ -33,6 +33,7 @@ module Burrito
   , Match.match
   , TH.uriTemplate
   , Template.Template
+  , Template.render
   , Value.Value
   , stringValue
   , listValue
