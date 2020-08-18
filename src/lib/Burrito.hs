@@ -28,12 +28,12 @@
 -- In short, use @parse@ to parse templates and @expand@ to render them.
 module Burrito
   ( Parse.parse
+  , Template.render
   , Expand.expand
   , Expand.expandWith
   , Match.match
   , TH.uriTemplate
   , Template.Template
-  , Template.render
   , Value.Value
   , stringValue
   , listValue
