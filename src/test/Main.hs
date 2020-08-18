@@ -167,7 +167,7 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
     . Hspec.it "round trips"
     . QC.property
     $ \(Template template) ->
-        Burrito.parse (Burrito.render template) == Just template
+        Burrito.parse (show template) == Just template
 
 -- brittany-next-binding --columns 160
 tests :: [Test]
@@ -1169,7 +1169,7 @@ runTest test =
         values = testValues test
         actual = Burrito.expand values template
       actual `Hspec.shouldBe` expected
-      Burrito.parse (Burrito.render template) `Hspec.shouldBe` Just template
+      Burrito.parse (show template) `Hspec.shouldBe` Just template
       let
         relevant =
           List.sort $ keepRelevant (templateVariables template) values
@@ -1261,7 +1261,7 @@ newtype Template = Template
 
 instance Show Template where
   show (Template template) =
-    unwords [show $ Burrito.render template, "{-", show template, "-}"]
+    unwords [show $ show template, "{-", show (Template.tokens template), "-}"]
 
 instance QC.Arbitrary Template where
   arbitrary = Template <$> arbitraryTemplate
