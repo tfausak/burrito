@@ -1,6 +1,6 @@
 # Burrito
 
-[![Travis CI](https://travis-ci.org/tfausak/burrito.svg?branch=master)](https://travis-ci.org/tfausak/burrito)
+[![CI](https://github.com/tfausak/burrito/workflows/CI/badge.svg)](https://github.com/tfausak/burrito/actions/new)
 [![Hackage](https://img.shields.io/hackage/v/burrito)](https://hackage.haskell.org/package/burrito)
 [![Stackage](https://www.stackage.org/package/burrito/badge/nightly?label=stackage)](https://www.stackage.org/package/burrito)
 
