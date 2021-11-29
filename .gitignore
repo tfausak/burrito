@@ -1,3 +1,5 @@
 /.stack-work/
 /.vscode/
+/cabal.project.local*
+/dist-newstyle/
 /stack.yaml.lock
