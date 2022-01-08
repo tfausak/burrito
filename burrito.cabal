@@ -23,7 +23,7 @@ description:
 
 build-type: Simple
 category: Network
-extra-source-files: README.markdown
+extra-source-files: CHANGELOG.markdown README.markdown
 license-file: LICENSE.markdown
 license: MIT
 maintainer: Taylor Fausak
