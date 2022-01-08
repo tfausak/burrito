@@ -116,7 +116,8 @@ modifier = Parsec.option Modifier.None $ Parsec.choice
   , Parsec.char ':' >> Modifier.Colon <$> maxLength
   ]
 
-maxLength :: Parsec.Stream s m Char => Parsec.ParsecT s u m MaxLength.MaxLength
+maxLength
+  :: Parsec.Stream s m Char => Parsec.ParsecT s u m MaxLength.MaxLength
 maxLength = do
   x <- Parsec.satisfy $ Ix.inRange ('1', '9')
   xs <- Parsec.many $ Parsec.satisfy Char.isDigit

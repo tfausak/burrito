@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Burrito.Internal.Type.Operator (Operator(..)) where
+module Burrito.Internal.Type.Operator
+  ( Operator(..)
+  ) where
 
 import qualified Data.Data as Data
 

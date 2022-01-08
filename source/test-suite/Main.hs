@@ -5,8 +5,7 @@
 
 module Main
   ( main
-  )
-where
+  ) where
 
 import qualified Burrito
 import qualified Burrito.Internal.Parse as Parse
@@ -166,8 +165,7 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
   Hspec.modifyMaxSize (const 10)
     . Hspec.it "round trips"
     . QC.property
-    $ \(Template template) ->
-        Burrito.parse (show template) == Just template
+    $ \(Template template) -> Burrito.parse (show template) == Just template
 
 -- brittany-next-binding --columns 160
 tests :: [Test]
@@ -1156,7 +1154,8 @@ data Test = Test
   { testInput :: String
   , testValues :: [(String, Burrito.Value)]
   , testOutput :: Output
-  } deriving (Eq, Show)
+  }
+  deriving (Eq, Show)
 
 runTest :: Test -> Hspec.Expectation
 runTest test =

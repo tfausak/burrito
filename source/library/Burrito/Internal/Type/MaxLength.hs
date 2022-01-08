@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Burrito.Internal.Type.MaxLength (MaxLength(..)) where
+module Burrito.Internal.Type.MaxLength
+  ( MaxLength(..)
+  ) where
 
 import qualified Data.Data as Data
 

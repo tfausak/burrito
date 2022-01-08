@@ -38,8 +38,7 @@ module Burrito
   , stringValue
   , listValue
   , dictionaryValue
-  )
-where
+  ) where
 
 import qualified Burrito.Internal.Expand as Expand
 import qualified Burrito.Internal.Match as Match
