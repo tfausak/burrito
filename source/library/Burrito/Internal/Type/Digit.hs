@@ -1,11 +1,16 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Burrito.Internal.Type.Digit (Digit(..), fromChar, fromWord8, toWord8) where
+module Burrito.Internal.Type.Digit
+  ( Digit(..)
+  , fromChar
+  , fromWord8
+  , toWord8
+  ) where
 
 import qualified Burrito.Internal.Type.Case as Case
 import qualified Data.Bits as Bits
-import qualified Data.Word as Word
 import qualified Data.Data as Data
+import qualified Data.Word as Word
 
 data Digit
   = Ox0

@@ -49,12 +49,13 @@ common library
   default-language: Haskell2010
   ghc-options:
     -Weverything
+    -Wno-all-missed-specialisations
     -Wno-implicit-prelude
+    -Wno-missed-specialisations
     -Wno-missing-deriving-strategies
     -Wno-missing-exported-signatures
     -Wno-safe
-    -Wno-missed-specialisations
-    -Wno-all-missed-specialisations
+    -Wno-unsafe
 
   if flag(pedantic)
     ghc-options: -Werror
@@ -102,7 +103,7 @@ library
     Burrito.Internal.Type.Token
     Burrito.Internal.Type.Value
     Burrito.Internal.Type.Variable
-  hs-source-dirs: src/lib
+  hs-source-dirs: source/library
 
 test-suite test
   import: executable
@@ -110,6 +111,6 @@ test-suite test
   build-depends:
     , hspec >= 2.7.6 && < 2.10
     , QuickCheck >= 2.13.2 && < 2.15
-  hs-source-dirs: src/test
+  hs-source-dirs: source/test-suite
   main-is: Main.hs
   type: exitcode-stdio-1.0
