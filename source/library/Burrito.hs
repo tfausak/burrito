@@ -2,8 +2,8 @@
 --
 -- According to [RFC 6570](https://tools.ietf.org/html/rfc6570): "A URI
 -- Template is a compact sequence of characters for describing a range of
-  -- Uniform Resource Identifiers through variable expansion." Burrito
-  -- implements URI templates according to the specification in that RFC.
+-- Uniform Resource Identifiers through variable expansion." Burrito
+-- implements URI templates according to the specification in that RFC.
 --
 -- The term "uniform resource identifiers" (URI) is often used interchangeably
 -- with other related terms like "internationalized resource identifier" (IRI),
@@ -33,6 +33,7 @@ module Burrito
   , Expand.expandWith
   , Match.match
   , TH.uriTemplate
+  , TH.expandTH
   , Template.Template
   , Value.Value
   , stringValue

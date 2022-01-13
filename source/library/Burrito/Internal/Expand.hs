@@ -50,7 +50,7 @@ expand values =
 -- | This is like @expand@ except that it gives you more control over how
 -- variables are expanded. If you can, use @expand@. It's simpler.
 --
--- Instead of passing in a static mapping form names to
+-- Instead of passing in a static mapping from names to
 -- values, you pass in a function that is used to look up values on the fly.
 -- This can be useful if computing values takes a while or requires some impure
 -- actions.
