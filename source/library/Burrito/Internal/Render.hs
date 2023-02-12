@@ -45,11 +45,11 @@ operator x = case x of
   Operator.Semicolon -> Builder.singleton ';'
   Operator.Solidus -> Builder.singleton '/'
 
-sepBy1
-  :: (a -> Builder.Builder)
-  -> Builder.Builder
-  -> NonEmpty.NonEmpty a
-  -> Builder.Builder
+sepBy1 ::
+  (a -> Builder.Builder) ->
+  Builder.Builder ->
+  NonEmpty.NonEmpty a ->
+  Builder.Builder
 sepBy1 f x = mconcat . List.intersperse x . fmap f . NonEmpty.toList
 
 variable :: Variable.Variable -> Builder.Builder

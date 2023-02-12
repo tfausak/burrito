@@ -1,8 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Burrito.Internal.Type.Value
-  ( Value(..)
-  ) where
+  ( Value (..),
+  )
+where
 
 import qualified Data.Data as Data
 import qualified Data.Map as Map

@@ -1,7 +1,8 @@
 module Burrito.Internal.TH
-  ( expandTH
-  , uriTemplate
-  ) where
+  ( expandTH,
+    uriTemplate,
+  )
+where
 
 import qualified Burrito.Internal.Expand as Expand
 import qualified Burrito.Internal.Parse as Parse
@@ -27,14 +28,13 @@ import qualified Language.Haskell.TH.Syntax as TH
 -- "l-bar-r"
 expandTH :: [(String, Value.Value)] -> Template.Template -> TH.Q TH.Exp
 expandTH xs t = do
-  let
-    m = Map.fromList $ fmap (Bifunctor.first Text.pack) xs
-    f k =
-      maybe (Left $ "missing variable: " <> show k) (Right . Just)
-        $ Map.lookup k m
+  let m = Map.fromList $ fmap (Bifunctor.first Text.pack) xs
+      f k =
+        maybe (Left $ "missing variable: " <> show k) (Right . Just) $
+          Map.lookup k m
   x <-
-    either fail (pure . LazyText.unpack . Builder.toLazyText)
-      $ Expand.expandWith f t
+    either fail (pure . LazyText.unpack . Builder.toLazyText) $
+      Expand.expandWith f t
   TH.lift x
 
 -- | This can be used together with the @QuasiQuotes@ language extension to
@@ -53,9 +53,10 @@ expandTH xs t = do
 -- this is invalid: @[uriTemplate|\\xa0|]@. You can however use percent encoded
 -- triples as normal. So this is valid: @[uriTemplate|%c2%a0|]@.
 uriTemplate :: TH.QuasiQuoter
-uriTemplate = TH.QuasiQuoter
-  { TH.quoteDec = const $ fail "cannot be used as a declaration"
-  , TH.quoteExp = maybe (fail "invalid URI template") TH.liftData . Parse.parse
-  , TH.quotePat = const $ fail "cannot be used as a pattern"
-  , TH.quoteType = const $ fail "cannot be used as a type"
-  }
+uriTemplate =
+  TH.QuasiQuoter
+    { TH.quoteDec = const $ fail "cannot be used as a declaration",
+      TH.quoteExp = maybe (fail "invalid URI template") TH.liftData . Parse.parse,
+      TH.quotePat = const $ fail "cannot be used as a pattern",
+      TH.quoteType = const $ fail "cannot be used as a type"
+    }

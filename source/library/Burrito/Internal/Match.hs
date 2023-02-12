@@ -70,8 +70,8 @@ finalize = Maybe.mapMaybe $ \(n, m) -> case m of
     Just (Render.builderToString $ Render.name n, Value.String v)
   Match.Undefined -> Nothing
 
-keepConsistent
-  :: [(Name.Name, Match.Match)] -> Maybe [(Name.Name, Match.Match)]
+keepConsistent ::
+  [(Name.Name, Match.Match)] -> Maybe [(Name.Name, Match.Match)]
 keepConsistent xs = case xs of
   [] -> Just xs
   (k, v) : ys -> do
@@ -90,8 +90,8 @@ combine x ys = case ys of
     Match.Prefix n t -> case y of
       Match.Defined u | t == Text.take (MaxLength.count n) u -> combine y zs
       Match.Prefix m u
-        | let c = MaxLength.count (min n m) in Text.take c t == Text.take c u
-        -> combine (if m > n then y else x) zs
+        | let c = MaxLength.count (min n m) in Text.take c t == Text.take c u ->
+            combine (if m > n then y else x) zs
       _ -> Nothing
     Match.Undefined -> case y of
       Match.Undefined -> combine x zs
@@ -111,10 +111,10 @@ token x = case x of
 expression :: Expression.Expression -> ReadP.ReadP [(Name.Name, Match.Match)]
 expression x = variables (Expression.operator x) (Expression.variables x)
 
-variables
-  :: Operator.Operator
-  -> NonEmpty.NonEmpty Variable.Variable
-  -> ReadP.ReadP [(Name.Name, Match.Match)]
+variables ::
+  Operator.Operator ->
+  NonEmpty.NonEmpty Variable.Variable ->
+  ReadP.ReadP [(Name.Name, Match.Match)]
 variables op vs = case op of
   Operator.Ampersand -> vars vs (Just '&') '&' varEq
   Operator.FullStop -> vars vs (Just '.') '.' $ variable Expand.isUnreserved
@@ -130,43 +130,41 @@ variables op vs = case op of
       variable Expand.isUnreserved v
   Operator.Solidus -> vars vs (Just '/') '/' $ variable Expand.isUnreserved
 
-vars
-  :: NonEmpty.NonEmpty Variable.Variable
-  -> Maybe Char
-  -> Char
-  -> (Variable.Variable -> ReadP.ReadP [(Name.Name, Match.Match)])
-  -> ReadP.ReadP [(Name.Name, Match.Match)]
+vars ::
+  NonEmpty.NonEmpty Variable.Variable ->
+  Maybe Char ->
+  Char ->
+  (Variable.Variable -> ReadP.ReadP [(Name.Name, Match.Match)]) ->
+  ReadP.ReadP [(Name.Name, Match.Match)]
 vars vs m c f = do
-  let
-    ctx = case m of
-      Nothing -> id
-      Just o -> \p -> ReadP.option (undef <$> NonEmpty.toList vs) $ do
-        char_ o
-        xs <- p
-        Monad.guard . not $ all isUndefined xs
-        pure xs
+  let ctx = case m of
+        Nothing -> id
+        Just o -> \p -> ReadP.option (undef <$> NonEmpty.toList vs) $ do
+          char_ o
+          xs <- p
+          Monad.guard . not $ all isUndefined xs
+          pure xs
   ctx . vars' c f $ NonEmpty.toList vs
 
 isUndefined :: (Name.Name, Match.Match) -> Bool
 isUndefined = (== Match.Undefined) . snd
 
-vars'
-  :: Char
-  -> (Variable.Variable -> ReadP.ReadP [(Name.Name, Match.Match)])
-  -> [Variable.Variable]
-  -> ReadP.ReadP [(Name.Name, Match.Match)]
+vars' ::
+  Char ->
+  (Variable.Variable -> ReadP.ReadP [(Name.Name, Match.Match)]) ->
+  [Variable.Variable] ->
+  ReadP.ReadP [(Name.Name, Match.Match)]
 vars' c f vs = case vs of
   [] -> pure []
   v : ws ->
-    let
-      this = do
-        x <- f v
-        xs <- ReadP.option (undef <$> ws) $ do
-          char_ c
-          vars' c f ws
-        pure $ x <> xs
-      that = (undef v :) <$> vars' c f ws
-    in this ReadP.+++ that
+    let this = do
+          x <- f v
+          xs <- ReadP.option (undef <$> ws) $ do
+            char_ c
+            vars' c f ws
+          pure $ x <> xs
+        that = (undef v :) <$> vars' c f ws
+     in this ReadP.+++ that
 
 undef :: Variable.Variable -> (Name.Name, Match.Match)
 undef v = (Variable.name v, Match.Undefined)
@@ -183,10 +181,10 @@ varEq v = do
 name :: Name.Name -> ReadP.ReadP ()
 name = Monad.void . ReadP.string . Render.builderToString . Render.name
 
-variable
-  :: (Char -> Bool)
-  -> Variable.Variable
-  -> ReadP.ReadP [(Name.Name, Match.Match)]
+variable ::
+  (Char -> Bool) ->
+  Variable.Variable ->
+  ReadP.ReadP [(Name.Name, Match.Match)]
 variable f x = do
   v <- case Variable.modifier x of
     Modifier.Asterisk -> ReadP.pfail
@@ -196,9 +194,8 @@ variable f x = do
 
 manyCharacters :: (Char -> Bool) -> ReadP.ReadP Text.Text
 manyCharacters f = do
-  let
-    f1 = (:) <$> someEncodedCharacters <*> ReadP.option [] f2
-    f2 = (:) <$> someUnencodedCharacters f <*> ReadP.option [] f1
+  let f1 = (:) <$> someEncodedCharacters <*> ReadP.option [] f2
+      f2 = (:) <$> someUnencodedCharacters f <*> ReadP.option [] f1
   fmap mconcat . ReadP.option [] $ f1 ReadP.<++ f2
 
 someEncodedCharacters :: ReadP.ReadP Text.Text
@@ -268,6 +265,7 @@ digit x = char_ $ case x of
   Digit.OxF Case.Lower -> 'f'
 
 unencodedCharacter :: (Char -> Bool) -> Char -> ReadP.ReadP ()
-unencodedCharacter f x = if f x
-  then char_ x
-  else mapM_ (uncurry encodedCharacter) $ Expand.encodeCharacter x
+unencodedCharacter f x =
+  if f x
+    then char_ x
+    else mapM_ (uncurry encodedCharacter) $ Expand.encodeCharacter x
