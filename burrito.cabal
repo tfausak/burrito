@@ -102,7 +102,7 @@ library
     Burrito.Internal.Type.Variable
   hs-source-dirs: source/library
 
-test-suite test
+test-suite burrito-test-suite
   import: executable
 
   build-depends:
