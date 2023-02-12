@@ -1,6 +1,6 @@
 # Burrito
 
-[![CI](https://github.com/tfausak/burrito/workflows/CI/badge.svg)](https://github.com/tfausak/burrito/actions/new)
+[![Workflow](https://github.com/tfausak/burrito/actions/workflows/workflow.yaml/badge.svg)](https://github.com/tfausak/burrito/actions/workflows/workflow.yaml)
 [![Hackage](https://img.shields.io/hackage/v/burrito)](https://hackage.haskell.org/package/burrito)
 [![Stackage](https://www.stackage.org/package/burrito/badge/nightly?label=stackage)](https://www.stackage.org/package/burrito)
 
