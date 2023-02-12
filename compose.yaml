@@ -5,11 +5,11 @@
       "image": "public.ecr.aws/acilearning/haskell:9.4.4",
       "init": true,
       "volumes": [
-        ".:/workspaces/autoexporter",
+        ".:/workspaces/burrito",
         "cabal:/home/haskell/.cabal",
         "cabal-store:/cabal-store"
       ],
-      "working_dir": "/workspaces/autoexporter"
+      "working_dir": "/workspaces/burrito"
     }
   },
   "volumes": {
