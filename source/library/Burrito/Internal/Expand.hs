@@ -43,9 +43,10 @@ import qualified Data.Text.Lazy.Builder as Builder
 expand :: [(String, Value.Value)] -> Template.Template -> String
 expand values =
   let m = Map.mapKeys Text.pack $ Map.fromList values
-  in
-    Render.builderToString . Identity.runIdentity . expandWith
-      (pure . flip Map.lookup m)
+   in Render.builderToString
+        . Identity.runIdentity
+        . expandWith
+          (pure . flip Map.lookup m)
 
 -- | This is like @expand@ except that it gives you more control over how
 -- variables are expanded. If you can, use @expand@. It's simpler.
@@ -68,20 +69,20 @@ expand values =
 -- >>> expandWith (\ x -> do { putStrLn $ "-- expanding " <> show x; pure . Just $ Burrito.stringValue "A" }) template
 -- -- expanding "a"
 -- "AA"
-expandWith
-  :: Monad m
-  => (Text.Text -> m (Maybe Value.Value))
-  -> Template.Template
-  -> m Builder.Builder
+expandWith ::
+  (Monad m) =>
+  (Text.Text -> m (Maybe Value.Value)) ->
+  Template.Template ->
+  m Builder.Builder
 expandWith f = flip State.evalStateT Map.empty . template (cached f)
 
 type CacheT = State.StateT (Map.Map Text.Text (Maybe Value.Value))
 
-cached
-  :: Monad m
-  => (Text.Text -> m (Maybe Value.Value))
-  -> Name.Name
-  -> CacheT m (Maybe Value.Value)
+cached ::
+  (Monad m) =>
+  (Text.Text -> m (Maybe Value.Value)) ->
+  Name.Name ->
+  CacheT m (Maybe Value.Value)
 cached f x = do
   let key = LazyText.toStrict . Builder.toLazyText $ name x
   cache <- State.get
@@ -92,39 +93,38 @@ cached f x = do
       State.modify $ Map.insert key result
       pure result
 
-template
-  :: Monad m
-  => (Name.Name -> CacheT m (Maybe Value.Value))
-  -> Template.Template
-  -> CacheT m Builder.Builder
+template ::
+  (Monad m) =>
+  (Name.Name -> CacheT m (Maybe Value.Value)) ->
+  Template.Template ->
+  CacheT m Builder.Builder
 template f = fmap mconcat . traverse (token f) . Template.tokens
 
-token
-  :: Monad m
-  => (Name.Name -> CacheT m (Maybe Value.Value))
-  -> Token.Token
-  -> CacheT m Builder.Builder
+token ::
+  (Monad m) =>
+  (Name.Name -> CacheT m (Maybe Value.Value)) ->
+  Token.Token ->
+  CacheT m Builder.Builder
 token f x = case x of
   Token.Expression y -> expression f y
   Token.Literal y -> pure $ literal y
 
-expression
-  :: Monad m
-  => (Name.Name -> CacheT m (Maybe Value.Value))
-  -> Expression.Expression
-  -> CacheT m Builder.Builder
+expression ::
+  (Monad m) =>
+  (Name.Name -> CacheT m (Maybe Value.Value)) ->
+  Expression.Expression ->
+  CacheT m Builder.Builder
 expression f ex =
   let op = Expression.operator ex
-  in
-    fmap
-      (mconcat
-      . (\xs -> if null xs then xs else prefix op : xs)
-      . List.intersperse (separator op)
-      . Maybe.catMaybes
-      )
-    . traverse (variable f op)
-    . NonEmpty.toList
-    $ Expression.variables ex
+   in fmap
+        ( mconcat
+            . (\xs -> if null xs then xs else prefix op : xs)
+            . List.intersperse (separator op)
+            . Maybe.catMaybes
+        )
+        . traverse (variable f op)
+        . NonEmpty.toList
+        $ Expression.variables ex
 
 separator :: Operator.Operator -> Builder.Builder
 separator op = Builder.singleton $ case op of
@@ -148,79 +148,79 @@ prefix op = case op of
   Operator.Semicolon -> Builder.singleton ';'
   Operator.Solidus -> Builder.singleton '/'
 
-variable
-  :: Monad m
-  => (Name.Name -> CacheT m (Maybe Value.Value))
-  -> Operator.Operator
-  -> Variable.Variable
-  -> CacheT m (Maybe Builder.Builder)
+variable ::
+  (Monad m) =>
+  (Name.Name -> CacheT m (Maybe Value.Value)) ->
+  Operator.Operator ->
+  Variable.Variable ->
+  CacheT m (Maybe Builder.Builder)
 variable f op var = do
   res <- f $ Variable.name var
   pure $ case res of
     Nothing -> Nothing
     Just val -> value op var val
 
-value
-  :: Operator.Operator
-  -> Variable.Variable
-  -> Value.Value
-  -> Maybe Builder.Builder
+value ::
+  Operator.Operator ->
+  Variable.Variable ->
+  Value.Value ->
+  Maybe Builder.Builder
 value op var val = case val of
   Value.Dictionary xs -> dictionaryValue op var $ Map.toAscList xs
   Value.List xs -> listValue op var xs
   Value.String x -> Just $ stringValue op var x
 
-dictionaryValue
-  :: Operator.Operator
-  -> Variable.Variable
-  -> [(Text.Text, Text.Text)]
-  -> Maybe Builder.Builder
+dictionaryValue ::
+  Operator.Operator ->
+  Variable.Variable ->
+  [(Text.Text, Text.Text)] ->
+  Maybe Builder.Builder
 dictionaryValue = items $ \op var (k, v) ->
   let f = string op Modifier.None
-  in
-    case Variable.modifier var of
-      Modifier.Asterisk -> [f k <> Builder.singleton '=' <> f v]
-      _ -> [f k, f v]
+   in case Variable.modifier var of
+        Modifier.Asterisk -> [f k <> Builder.singleton '=' <> f v]
+        _ -> [f k, f v]
 
-listValue
-  :: Operator.Operator
-  -> Variable.Variable
-  -> [Text.Text]
-  -> Maybe Builder.Builder
-listValue = items $ \op var -> pure . stringValue
-  (case Variable.modifier var of
-    Modifier.Asterisk -> op
-    _ -> Operator.None
-  )
-  var { Variable.modifier = Modifier.None }
+listValue ::
+  Operator.Operator ->
+  Variable.Variable ->
+  [Text.Text] ->
+  Maybe Builder.Builder
+listValue = items $ \op var ->
+  pure
+    . stringValue
+      ( case Variable.modifier var of
+          Modifier.Asterisk -> op
+          _ -> Operator.None
+      )
+      var {Variable.modifier = Modifier.None}
 
-items
-  :: (Operator.Operator -> Variable.Variable -> a -> [Builder.Builder])
-  -> Operator.Operator
-  -> Variable.Variable
-  -> [a]
-  -> Maybe Builder.Builder
+items ::
+  (Operator.Operator -> Variable.Variable -> a -> [Builder.Builder]) ->
+  Operator.Operator ->
+  Variable.Variable ->
+  [a] ->
+  Maybe Builder.Builder
 items f op var xs =
-  let
-    md = Variable.modifier var
-    sep = case md of
-      Modifier.Asterisk -> separator op
-      _ -> Builder.singleton ','
-    p = case md of
-      Modifier.Asterisk -> False
-      _ -> case op of
-        Operator.Ampersand -> True
-        Operator.QuestionMark -> True
-        Operator.Semicolon -> True
-        _ -> False
-  in if null xs
-    then Nothing
-    else
-      Just
-      . mconcat
-      . (if p then (label True var :) else id)
-      . List.intersperse sep
-      $ concatMap (f op var) xs
+  let md = Variable.modifier var
+      sep = case md of
+        Modifier.Asterisk -> separator op
+        _ -> Builder.singleton ','
+      p = case md of
+        Modifier.Asterisk -> False
+        _ -> case op of
+          Operator.Ampersand -> True
+          Operator.QuestionMark -> True
+          Operator.Semicolon -> True
+          _ -> False
+   in if null xs
+        then Nothing
+        else
+          Just
+            . mconcat
+            . (if p then (label True var :) else id)
+            . List.intersperse sep
+            $ concatMap (f op var) xs
 
 label :: Bool -> Variable.Variable -> Builder.Builder
 label p v =
@@ -242,29 +242,27 @@ character f x = case x of
   Character.Encoded y z -> Render.encodedCharacter y z
   Character.Unencoded y -> unencodedCharacter f y
 
-stringValue
-  :: Operator.Operator -> Variable.Variable -> Text.Text -> Builder.Builder
+stringValue ::
+  Operator.Operator -> Variable.Variable -> Text.Text -> Builder.Builder
 stringValue op var str =
-  let
-    pre = case op of
-      Operator.Ampersand -> label True var
-      Operator.QuestionMark -> label True var
-      Operator.Semicolon -> label (not $ Text.null str) var
-      _ -> mempty
-  in pre <> string op (Variable.modifier var) str
+  let pre = case op of
+        Operator.Ampersand -> label True var
+        Operator.QuestionMark -> label True var
+        Operator.Semicolon -> label (not $ Text.null str) var
+        _ -> mempty
+   in pre <> string op (Variable.modifier var) str
 
-string
-  :: Operator.Operator -> Modifier.Modifier -> Text.Text -> Builder.Builder
+string ::
+  Operator.Operator -> Modifier.Modifier -> Text.Text -> Builder.Builder
 string op md =
-  let
-    allowed x = case op of
-      Operator.NumberSign -> isAllowed x
-      Operator.PlusSign -> isAllowed x
-      _ -> isUnreserved x
-    trim = case md of
-      Modifier.Colon ml -> Text.take $ MaxLength.count ml
-      _ -> id
-  in foldMap (unencodedCharacter allowed) . Text.unpack . trim
+  let allowed x = case op of
+        Operator.NumberSign -> isAllowed x
+        Operator.PlusSign -> isAllowed x
+        _ -> isUnreserved x
+      trim = case md of
+        Modifier.Colon ml -> Text.take $ MaxLength.count ml
+        _ -> id
+   in foldMap (unencodedCharacter allowed) . Text.unpack . trim
 
 isAllowed :: Char -> Bool
 isAllowed x = isUnreserved x || isReserved x
@@ -300,9 +298,10 @@ isReserved x = case x of
   _ -> False
 
 unencodedCharacter :: (Char -> Bool) -> Char -> Builder.Builder
-unencodedCharacter f x = if f x
-  then Builder.singleton x
-  else foldMap (uncurry Render.encodedCharacter) $ encodeCharacter x
+unencodedCharacter f x =
+  if f x
+    then Builder.singleton x
+    else foldMap (uncurry Render.encodedCharacter) $ encodeCharacter x
 
 encodeCharacter :: Char -> [(Digit.Digit, Digit.Digit)]
 encodeCharacter =

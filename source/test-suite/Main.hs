@@ -1,11 +1,11 @@
-{-# OPTIONS_GHC -Wno-monomorphism-restriction #-}
-
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# OPTIONS_GHC -Wno-monomorphism-restriction #-}
 
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 import qualified Burrito
 import qualified Burrito.Internal.Parse as Parse
@@ -39,27 +39,26 @@ import qualified Test.QuickCheck as QC
 
 main :: IO ()
 main = Hspec.hspec . Hspec.describe "Burrito" $ do
-
   Monad.forM_ tests $ \test ->
-    Hspec.it (show (testInput test, unwrapOutput $ testOutput test))
-      $ runTest test
+    Hspec.it (show (testInput test, unwrapOutput $ testOutput test)) $
+      runTest test
 
   Hspec.describe "match" $ do
-    let
-      matchTest
-        :: Stack.HasCallStack
-        => String
-        -> [(String, Burrito.Value)]
-        -> String
-        -> Hspec.Spec
-      matchTest input values output = Hspec.it (show (input, output)) $ do
-        template <- maybe (fail "invalid Template") pure $ Burrito.parse input
-        let matches = Burrito.match output template
-        matches `Hspec.shouldSatisfy` elem values
-        Monad.forM_ matches $ \match -> do
-          let it = Burrito.expand match template
-          Monad.when (it /= output) . fail $ show
-            (input, values, output, matches, match, it)
+    let matchTest ::
+          (Stack.HasCallStack) =>
+          String ->
+          [(String, Burrito.Value)] ->
+          String ->
+          Hspec.Spec
+        matchTest input values output = Hspec.it (show (input, output)) $ do
+          template <- maybe (fail "invalid Template") pure $ Burrito.parse input
+          let matches = Burrito.match output template
+          matches `Hspec.shouldSatisfy` elem values
+          Monad.forM_ matches $ \match -> do
+            let it = Burrito.expand match template
+            Monad.when (it /= output) . fail $
+              show
+                (input, values, output, matches, match, it)
 
     matchTest "" [] ""
     matchTest "a" [] "a"
@@ -148,19 +147,19 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
 
     matchTest "{a:1}/{a}" ["a" =: s "AB"] "A/AB"
 
-    -- TODO: Test matching on explode modifier.
-    -- matchTest "{a*}" ["a" =: s "A"] "A"
+  -- TODO: Test matching on explode modifier.
+  -- matchTest "{a*}" ["a" =: s "A"] "A"
 
-    -- TODO: Test matching on lists.
-    -- matchTest "{a}" ["a" =: l ["A", "B"]] "A,B"
+  -- TODO: Test matching on lists.
+  -- matchTest "{a}" ["a" =: l ["A", "B"]] "A,B"
 
-    -- TODO: Test matching on dictionaries.
-    -- matchTest "{a}" ["a" =: d ["k" =: "v"]] "k,v"
+  -- TODO: Test matching on dictionaries.
+  -- matchTest "{a}" ["a" =: d ["k" =: "v"]] "k,v"
 
   Hspec.describe "uriTemplate"
     . Hspec.it "works as an expression"
     $ Just [Burrito.uriTemplate|a{b}c|]
-    `Hspec.shouldBe` Burrito.parse "a{b}c"
+      `Hspec.shouldBe` Burrito.parse "a{b}c"
 
   Hspec.modifyMaxSize (const 10)
     . Hspec.it "round trips"
@@ -169,991 +168,976 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
 
 -- brittany-next-binding --columns 160
 tests :: [Test]
-tests = mconcat
-  [ [ Test "" [] ""
-    , Test "" ["a" =: s ""] ""
-    , Test "" ["a" =: l []] ""
-    , Test "" ["a" =: d []] ""
-    , Test "!" [] "!"
-    , Test "#" [] "#"
-    , Test "$" [] "$"
-    , Test "&" [] "&"
-    , Test "(" [] "("
-    , Test ")" [] ")"
-    , Test "*" [] "*"
-    , Test "+" [] "+"
-    , Test "," [] ","
-    , Test "-" [] "-"
-    , Test "." [] "."
-    , Test "/" [] "/"
-    , Test "0" [] "0"
-    , Test "9" [] "9"
-    , Test ":" [] ":"
-    , Test ";" [] ";"
-    , Test "=" [] "="
-    , Test "?" [] "?"
-    , Test "@" [] "@"
-    , Test "A" [] "A"
-    , Test "Z" [] "Z"
-    , Test "[" [] "["
-    , Test "]" [] "]"
-    , Test "_" [] "_"
-    , Test "a" [] "a"
-    , Test "z" [] "z"
-    , Test "~" [] "~"
-    , Test "\xa0" [] "%C2%A0"
-    , Test "\xd7ff" [] "%ED%9F%BF"
-    , Test "\xf900" [] "%EF%A4%80"
-    , Test "\xfdcf" [] "%EF%B7%8F"
-    , Test "\xfdf0" [] "%EF%B7%B0"
-    , Test "\xffef" [] "%EF%BF%AF"
-    , Test "\x10000" [] "%F0%90%80%80"
-    , Test "\x1fffd" [] "%F0%9F%BF%BD"
-    , Test "\x20000" [] "%F0%A0%80%80"
-    , Test "\x2fffd" [] "%F0%AF%BF%BD"
-    , Test "\x30000" [] "%F0%B0%80%80"
-    , Test "\x3fffd" [] "%F0%BF%BF%BD"
-    , Test "\x40000" [] "%F1%80%80%80"
-    , Test "\x4fffd" [] "%F1%8F%BF%BD"
-    , Test "\x50000" [] "%F1%90%80%80"
-    , Test "\x5fffd" [] "%F1%9F%BF%BD"
-    , Test "\x60000" [] "%F1%A0%80%80"
-    , Test "\x6fffd" [] "%F1%AF%BF%BD"
-    , Test "\x70000" [] "%F1%B0%80%80"
-    , Test "\x7fffd" [] "%F1%BF%BF%BD"
-    , Test "\x80000" [] "%F2%80%80%80"
-    , Test "\x8fffd" [] "%F2%8F%BF%BD"
-    , Test "\x90000" [] "%F2%90%80%80"
-    , Test "\x9fffd" [] "%F2%9F%BF%BD"
-    , Test "\xa0000" [] "%F2%A0%80%80"
-    , Test "\xafffd" [] "%F2%AF%BF%BD"
-    , Test "\xb0000" [] "%F2%B0%80%80"
-    , Test "\xbfffd" [] "%F2%BF%BF%BD"
-    , Test "\xc0000" [] "%F3%80%80%80"
-    , Test "\xcfffd" [] "%F3%8F%BF%BD"
-    , Test "\xd0000" [] "%F3%90%80%80"
-    , Test "\xdfffd" [] "%F3%9F%BF%BD"
-    , Test "\xe1000" [] "%F3%A1%80%80"
-    , Test "\xefffd" [] "%F3%AF%BF%BD"
-    , Test "\xe000" [] "%EE%80%80"
-    , Test "\xf8ff" [] "%EF%A3%BF"
-    , Test "\xf0000" [] "%F3%B0%80%80"
-    , Test "\xffffd" [] "%F3%BF%BF%BD"
-    , Test "\x100000" [] "%F4%80%80%80"
-    , Test "\x10fffd" [] "%F4%8F%BF%BD"
-    , Test "%00" [] "%00"
-    , Test "%AA" [] "%AA"
-    , Test "%Aa" [] "%Aa"
-    , Test "%aA" [] "%aA"
-    , Test "%aa" [] "%aa"
-    , Test "%" [] noParse
-    , Test "%0" [] noParse
-    , Test "%0z" [] noParse
-    , Test "%z" [] noParse
-    , Test "%30" [] "%30"
-    , Test " " [] noParse
-    , Test "\"" [] noParse
-    , Test "'" [] noParse
-    , Test "%" [] noParse
-    , Test "<" [] noParse
-    , Test ">" [] noParse
-    , Test "\\" [] noParse
-    , Test "^" [] noParse
-    , Test "`" [] noParse
-    , Test "{" [] noParse
-    , Test "|" [] noParse
-    , Test "}" [] noParse
-    , Test "{}" [] noParse
-    , Test "{,}" [] noParse
-    , Test "{a,,b}" [] noParse
-    , Test "{+}" [] noParse
-    , Test "{:1}" [] noParse
-    , Test "{*}" [] noParse
-    , Test "{AZ}" [] ""
-    , Test "{az}" [] ""
-    , Test "{09}" [] ""
-    , Test "{_a}" [] ""
-    , Test "{a_}" [] ""
-    , Test "{_}" [] ""
-    , Test "{A.A}" [] ""
-    , Test "{a.a}" [] ""
-    , Test "{0.0}" [] ""
-    , Test "{_._}" [] ""
-    , Test "{%aa.%aa}" [] ""
-    , Test "{.}" [] noParse
-    , Test "{a.}" [] noParse
-    , Test "{+.a}" [] noParse
-    , Test "{a..b}" [] noParse
-    , Test "{%00}" [] ""
-    , Test "{%}" [] noParse
-    , Test "{%0}" [] noParse
-    , Test "{%0z}" [] noParse
-    , Test "{%z}" [] noParse
-    , Test "{!}" [] noParse
-    , Test "{" [] noParse
-    , Test "{{}" [] noParse
-    , Test "}" [] noParse
-    , Test "{}}" [] noParse
-    , Test "{a,b}" [] ""
-    , Test "{a,b,c,d}" [] ""
-    , Test "{a,a}" [] ""
-    , Test "{a:5}" [] ""
-    , Test "{a:67}" [] ""
-    , Test "{a:801}" [] ""
-    , Test "{a:234}" [] ""
-    , Test "{a:9999}" [] ""
-    , Test "{a:123}" ["a" =: s (replicate 200 'a')] . Output . Just $ replicate 123 'a'
-    , Test "{a:}" [] noParse
-    , Test "{a:0}" [] noParse
-    , Test "{a:10000}" [] noParse
-    , Test "{a:-1}" [] noParse
-    , Test "{a*}" [] ""
-    , Test "{a:1*}" [] noParse
-    , Test "{a*:1}" [] noParse
-    , Test "{a,b:1,c*}" [] ""
-    , Test "{+a}" [] ""
-    , Test "{#a}" [] ""
-    , Test "{.a}" [] ""
-    , Test "{/a}" [] ""
-    , Test "{;a}" [] ""
-    , Test "{?a}" [] ""
-    , Test "{&a}" [] ""
-    , Test "{=a}" [] noParse
-    , Test "{,a}" [] noParse
-    , Test "{!a}" [] noParse
-    , Test "{@a}" [] noParse
-    , Test "{|a}" [] noParse
-    , Test "{+#a}" [] noParse
-    , Test "{+a,#b}" [] noParse
-    , Test "{+a:1}" [] ""
-    , Test "{#a*}" [] ""
-    , Test "{+a,b}" [] ""
-    , Test "{#a,b}" [] ""
-    , Test "{.a,b}" [] ""
-    , Test "{/a,b}" [] ""
-    , Test "{;a,b}" [] ""
-    , Test "{?a,b}" [] ""
-    , Test "{&a,b}" [] ""
-    , Test "{a}{b}" [] ""
-    , Test "{a}{b}{c}{d}" [] ""
-    , Test "{a}{a}" [] ""
-    , Test "{{}}" [] noParse
-    , Test "{a{b}}" [] noParse
-    , Test "{{a}b}" [] noParse
-    , Test "{a{b}c}" [] noParse
-    , Test "a{b}" [] "a"
-    , Test "{a}b" [] "b"
-    , Test "a{b}c" [] "ac"
-    , Test "{a}b{c}" [] "b"
-    , Test "{a}" [] ""
-    , Test "{+a}" [] ""
-    , Test "{#a}" [] ""
-    , Test "{.a}" [] ""
-    , Test "{/a}" [] ""
-    , Test "{;a}" [] ""
-    , Test "{?a}" [] ""
-    , Test "{&a}" [] ""
-    , Test "http://example.com/~{username}/" ["username" =: s "fred"] "http://example.com/~fred/"
-    , Test "http://example.com/~{username}/" ["username" =: s "mark"] "http://example.com/~mark/"
-    , Test "http://example.com/dictionary/{term:1}/{term}" ["term" =: s "cat"] "http://example.com/dictionary/c/cat"
-    , Test "http://example.com/dictionary/{term:1}/{term}" ["term" =: s "dog"] "http://example.com/dictionary/d/dog"
-    , Test "http://example.com/search{?q,lang}" ["q" =: s "cat", "lang" =: s "en"] "http://example.com/search?q=cat&lang=en"
-    , Test "http://example.com/search{?q,lang}" ["q" =: s "chien", "lang" =: s "fr"] "http://example.com/search?q=chien&lang=fr"
-    , Test "http://www.example.com/foo{?query,number}" ["query" =: s "mycelium", "number" =: s "100"] "http://www.example.com/foo?query=mycelium&number=100"
-    , Test "http://www.example.com/foo{?query,number}" ["number" =: s "100"] "http://www.example.com/foo?number=100"
-    , Test "http://www.example.com/foo{?query,number}" [] "http://www.example.com/foo"
-    , Test "{a}" [] ""
-    , Test "{a}" ["a" =: l []] ""
-    , Test "{a}" ["a" =: d []] ""
-    , Test "{a}" ["a" =: s ""] ""
-    , Test "{a}" ["a" =: s "A"] "A"
-    , Test "{a}" ["a" =: s "~"] "~"
-    , Test "{a}" ["a" =: s "%"] "%25"
-    , Test "{a}" ["a" =: s "?"] "%3F"
-    , Test "{a}" ["a" =: s "&"] "%26"
-    , Test "{a}" ["a" =: s "\xa0"] "%C2%A0"
-    , Test "{a}" ["a" =: s "\xd7ff"] "%ED%9F%BF"
-    , Test "{a}" ["a" =: s "\x10000"] "%F0%90%80%80"
-    , Test "{a}" ["a" =: l ["A"]] "A"
-    , Test "{a}" ["a" =: l ["A", "B"]] "A,B"
-    , Test "{a}" ["a" =: l ["%"]] "%25"
-    , Test "{a}" ["a" =: l ["\xa0"]] "%C2%A0"
-    , Test "{a}" ["a" =: d ["A" =: "1"]] "A,1"
-    , Test "{a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "A,1,B,2"
-    , Test "{a}" ["a" =: d ["A" =: "%"]] "A,%25"
-    , Test "{a}" ["a" =: d ["A" =: "\xa0"]] "A,%C2%A0"
-    , Test "{a}" ["a" =: d ["%" =: "1"]] "%25,1"
-    , Test "{a*}" [] ""
-    , Test "{a*}" ["a" =: s ""] ""
-    , Test "{a*}" ["a" =: s "A"] "A"
-    , Test "{a*}" ["a" =: l []] ""
-    , Test "{a*}" ["a" =: l ["A"]] "A"
-    , Test "{a*}" ["a" =: l ["A", "B"]] "A,B"
-    , Test "{a*}" ["a" =: d []] ""
-    , Test "{a*}" ["a" =: d ["A" =: "1"]] "A=1"
-    , Test "{a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "A=1,B=2"
-    , Test "{a:1}" [] ""
-    , Test "{a:1}" ["a" =: s ""] ""
-    , Test "{a:1}" ["a" =: s "A"] "A"
-    , Test "{a:1}" ["a" =: s "AB"] "A"
-    , Test "{a:1}" ["a" =: s "%B"] "%25"
-    , Test "{a:1}" ["a" =: s "\xa0\&B"] "%C2%A0"
-    , Test "{a:1}" ["a" =: s "\xd7ff\&B"] "%ED%9F%BF"
-    , Test "{a:1}" ["a" =: s "\x10000\&B"] "%F0%90%80%80"
-    , Test "{a:1}" ["a" =: l []] ""
-    , Test "{a:1}" ["a" =: l ["AB"]] "AB"
-    , Test "{a:1}" ["a" =: l ["AB", "CD"]] "AB,CD"
-    , Test "{a:1}" ["a" =: d []] ""
-    , Test "{a:1}" ["a" =: d ["AB" =: "12"]] "AB,12"
-    , Test "{a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "AB,12,CD,34"
-    , Test "{a,a}" [] ""
-    , Test "{a,a}" ["a" =: l []] ""
-    , Test "{a,a}" ["a" =: d []] ""
-    , Test "{a,a}" ["a" =: s ""] ","
-    , Test "{a,b}" ["a" =: s ""] ""
-    , Test "{a,b}" ["b" =: s ""] ""
-    , Test "{%aa}" ["%aa" =: s "A"] "A"
-    , Test "{%aa}" ["%aa" =: l ["A", "B"]] "A,B"
-    , Test "{%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "A,1,B,2"
-    , Test "{%aa*}" ["%aa" =: s "A"] "A"
-    , Test "{%aa*}" ["%aa" =: l ["A", "B"]] "A,B"
-    , Test "{%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "A=1,B=2"
-    , Test "{+a}" [] ""
-    , Test "{+a}" ["a" =: l []] ""
-    , Test "{+a}" ["a" =: d []] ""
-    , Test "{+a}" ["a" =: s ""] ""
-    , Test "{+a}" ["a" =: s "A"] "A"
-    , Test "{+a}" ["a" =: s "~"] "~"
-    , Test "{+a}" ["a" =: s "%"] "%25"
-    , Test "{+a}" ["a" =: s "?"] "?"
-    , Test "{+a}" ["a" =: s "&"] "&"
-    , Test "{+a}" ["a" =: s "\xa0"] "%C2%A0"
-    , Test "{+a}" ["a" =: s "\xd7ff"] "%ED%9F%BF"
-    , Test "{+a}" ["a" =: s "\x10000"] "%F0%90%80%80"
-    , Test "{+a}" ["a" =: l ["A"]] "A"
-    , Test "{+a}" ["a" =: l ["A", "B"]] "A,B"
-    , Test "{+a}" ["a" =: l ["%"]] "%25"
-    , Test "{+a}" ["a" =: l ["\xa0"]] "%C2%A0"
-    , Test "{+a}" ["a" =: d ["A" =: "1"]] "A,1"
-    , Test "{+a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "A,1,B,2"
-    , Test "{+a}" ["a" =: d ["A" =: "%"]] "A,%25"
-    , Test "{+a}" ["a" =: d ["A" =: "\xa0"]] "A,%C2%A0"
-    , Test "{+a}" ["a" =: d ["%" =: "1"]] "%25,1"
-    , Test "{+a*}" [] ""
-    , Test "{+a*}" ["a" =: s ""] ""
-    , Test "{+a*}" ["a" =: s "A"] "A"
-    , Test "{+a*}" ["a" =: l []] ""
-    , Test "{+a*}" ["a" =: l ["A"]] "A"
-    , Test "{+a*}" ["a" =: l ["A", "B"]] "A,B"
-    , Test "{+a*}" ["a" =: d []] ""
-    , Test "{+a*}" ["a" =: d ["A" =: "1"]] "A=1"
-    , Test "{+a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "A=1,B=2"
-    , Test "{+a:1}" [] ""
-    , Test "{+a:1}" ["a" =: s ""] ""
-    , Test "{+a:1}" ["a" =: s "A"] "A"
-    , Test "{+a:1}" ["a" =: s "AB"] "A"
-    , Test "{+a:1}" ["a" =: s "%B"] "%25"
-    , Test "{+a:1}" ["a" =: s "\xa0\&B"] "%C2%A0"
-    , Test "{+a:1}" ["a" =: s "\xd7ff\&B"] "%ED%9F%BF"
-    , Test "{+a:1}" ["a" =: s "\x10000\&B"] "%F0%90%80%80"
-    , Test "{+a:1}" ["a" =: l []] ""
-    , Test "{+a:1}" ["a" =: l ["AB"]] "AB"
-    , Test "{+a:1}" ["a" =: l ["AB", "CD"]] "AB,CD"
-    , Test "{+a:1}" ["a" =: d []] ""
-    , Test "{+a:1}" ["a" =: d ["AB" =: "12"]] "AB,12"
-    , Test "{+a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "AB,12,CD,34"
-    , Test "{+a,a}" [] ""
-    , Test "{+a,a}" ["a" =: l []] ""
-    , Test "{+a,a}" ["a" =: d []] ""
-    , Test "{+a,a}" ["a" =: s ""] ","
-    , Test "{+a,b}" ["a" =: s ""] ""
-    , Test "{+a,b}" ["b" =: s ""] ""
-    , Test "{+%aa}" ["%aa" =: s "A"] "A"
-    , Test "{+%aa}" ["%aa" =: l ["A", "B"]] "A,B"
-    , Test "{+%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "A,1,B,2"
-    , Test "{+%aa*}" ["%aa" =: s "A"] "A"
-    , Test "{+%aa*}" ["%aa" =: l ["A", "B"]] "A,B"
-    , Test "{+%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "A=1,B=2"
-    , Test "{#a}" [] ""
-    , Test "{#a}" ["a" =: l []] ""
-    , Test "{#a}" ["a" =: d []] ""
-    , Test "{#a}" ["a" =: s ""] "#"
-    , Test "{#a}" ["a" =: s "A"] "#A"
-    , Test "{#a}" ["a" =: s "~"] "#~"
-    , Test "{#a}" ["a" =: s "%"] "#%25"
-    , Test "{#a}" ["a" =: s "?"] "#?"
-    , Test "{#a}" ["a" =: s "&"] "#&"
-    , Test "{#a}" ["a" =: s "\xa0"] "#%C2%A0"
-    , Test "{#a}" ["a" =: s "\xd7ff"] "#%ED%9F%BF"
-    , Test "{#a}" ["a" =: s "\x10000"] "#%F0%90%80%80"
-    , Test "{#a}" ["a" =: l ["A"]] "#A"
-    , Test "{#a}" ["a" =: l ["A", "B"]] "#A,B"
-    , Test "{#a}" ["a" =: l ["%"]] "#%25"
-    , Test "{#a}" ["a" =: l ["\xa0"]] "#%C2%A0"
-    , Test "{#a}" ["a" =: d ["A" =: "1"]] "#A,1"
-    , Test "{#a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "#A,1,B,2"
-    , Test "{#a}" ["a" =: d ["A" =: "%"]] "#A,%25"
-    , Test "{#a}" ["a" =: d ["A" =: "\xa0"]] "#A,%C2%A0"
-    , Test "{#a}" ["a" =: d ["%" =: "1"]] "#%25,1"
-    , Test "{#a*}" [] ""
-    , Test "{#a*}" ["a" =: s ""] "#"
-    , Test "{#a*}" ["a" =: s "A"] "#A"
-    , Test "{#a*}" ["a" =: l []] ""
-    , Test "{#a*}" ["a" =: l ["A"]] "#A"
-    , Test "{#a*}" ["a" =: l ["A", "B"]] "#A,B"
-    , Test "{#a*}" ["a" =: d []] ""
-    , Test "{#a*}" ["a" =: d ["A" =: "1"]] "#A=1"
-    , Test "{#a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "#A=1,B=2"
-    , Test "{#a:1}" [] ""
-    , Test "{#a:1}" ["a" =: s ""] "#"
-    , Test "{#a:1}" ["a" =: s "A"] "#A"
-    , Test "{#a:1}" ["a" =: s "AB"] "#A"
-    , Test "{#a:1}" ["a" =: s "%B"] "#%25"
-    , Test "{#a:1}" ["a" =: s "\xa0\&B"] "#%C2%A0"
-    , Test "{#a:1}" ["a" =: s "\xd7ff\&B"] "#%ED%9F%BF"
-    , Test "{#a:1}" ["a" =: s "\x10000\&B"] "#%F0%90%80%80"
-    , Test "{#a:1}" ["a" =: l []] ""
-    , Test "{#a:1}" ["a" =: l ["AB"]] "#AB"
-    , Test "{#a:1}" ["a" =: l ["AB", "CD"]] "#AB,CD"
-    , Test "{#a:1}" ["a" =: d []] ""
-    , Test "{#a:1}" ["a" =: d ["AB" =: "12"]] "#AB,12"
-    , Test "{#a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "#AB,12,CD,34"
-    , Test "{#a,a}" [] ""
-    , Test "{#a,a}" ["a" =: l []] ""
-    , Test "{#a,a}" ["a" =: d []] ""
-    , Test "{#a,a}" ["a" =: s ""] "#,"
-    , Test "{#a,b}" ["a" =: s ""] "#"
-    , Test "{#a,b}" ["b" =: s ""] "#"
-    , Test "{#%aa}" ["%aa" =: s "A"] "#A"
-    , Test "{#%aa}" ["%aa" =: l ["A", "B"]] "#A,B"
-    , Test "{#%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "#A,1,B,2"
-    , Test "{#%aa*}" ["%aa" =: s "A"] "#A"
-    , Test "{#%aa*}" ["%aa" =: l ["A", "B"]] "#A,B"
-    , Test "{#%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "#A=1,B=2"
-    , Test "{.a}" [] ""
-    , Test "{.a}" ["a" =: l []] ""
-    , Test "{.a}" ["a" =: d []] ""
-    , Test "{.a}" ["a" =: s ""] "."
-    , Test "{.a}" ["a" =: s "A"] ".A"
-    , Test "{.a}" ["a" =: s "~"] ".~"
-    , Test "{.a}" ["a" =: s "%"] ".%25"
-    , Test "{.a}" ["a" =: s "?"] ".%3F"
-    , Test "{.a}" ["a" =: s "&"] ".%26"
-    , Test "{.a}" ["a" =: s "\xa0"] ".%C2%A0"
-    , Test "{.a}" ["a" =: s "\xd7ff"] ".%ED%9F%BF"
-    , Test "{.a}" ["a" =: s "\x10000"] ".%F0%90%80%80"
-    , Test "{.a}" ["a" =: l ["A"]] ".A"
-    , Test "{.a}" ["a" =: l ["A", "B"]] ".A,B"
-    , Test "{.a}" ["a" =: l ["%"]] ".%25"
-    , Test "{.a}" ["a" =: l ["\xa0"]] ".%C2%A0"
-    , Test "{.a}" ["a" =: d ["A" =: "1"]] ".A,1"
-    , Test "{.a}" ["a" =: d ["A" =: "1", "B" =: "2"]] ".A,1,B,2"
-    , Test "{.a}" ["a" =: d ["A" =: "%"]] ".A,%25"
-    , Test "{.a}" ["a" =: d ["A" =: "\xa0"]] ".A,%C2%A0"
-    , Test "{.a}" ["a" =: d ["%" =: "1"]] ".%25,1"
-    , Test "{.a*}" [] ""
-    , Test "{.a*}" ["a" =: s ""] "."
-    , Test "{.a*}" ["a" =: s "A"] ".A"
-    , Test "{.a*}" ["a" =: l []] ""
-    , Test "{.a*}" ["a" =: l ["A"]] ".A"
-    , Test "{.a*}" ["a" =: l ["A", "B"]] ".A.B"
-    , Test "{.a*}" ["a" =: d []] ""
-    , Test "{.a*}" ["a" =: d ["A" =: "1"]] ".A=1"
-    , Test "{.a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] ".A=1.B=2"
-    , Test "{.a:1}" [] ""
-    , Test "{.a:1}" ["a" =: s ""] "."
-    , Test "{.a:1}" ["a" =: s "A"] ".A"
-    , Test "{.a:1}" ["a" =: s "AB"] ".A"
-    , Test "{.a:1}" ["a" =: s "%B"] ".%25"
-    , Test "{.a:1}" ["a" =: s "\xa0\&B"] ".%C2%A0"
-    , Test "{.a:1}" ["a" =: s "\xd7ff\&B"] ".%ED%9F%BF"
-    , Test "{.a:1}" ["a" =: s "\x10000\&B"] ".%F0%90%80%80"
-    , Test "{.a:1}" ["a" =: l []] ""
-    , Test "{.a:1}" ["a" =: l ["AB"]] ".AB"
-    , Test "{.a:1}" ["a" =: l ["AB", "CD"]] ".AB,CD"
-    , Test "{.a:1}" ["a" =: d []] ""
-    , Test "{.a:1}" ["a" =: d ["AB" =: "12"]] ".AB,12"
-    , Test "{.a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] ".AB,12,CD,34"
-    , Test "{.a,a}" [] ""
-    , Test "{.a,a}" ["a" =: l []] ""
-    , Test "{.a,a}" ["a" =: d []] ""
-    , Test "{.a,a}" ["a" =: s ""] ".."
-    , Test "{.a,b}" ["a" =: s ""] "."
-    , Test "{.a,b}" ["b" =: s ""] "."
-    , Test "{.%aa}" ["%aa" =: s "A"] ".A"
-    , Test "{.%aa}" ["%aa" =: l ["A", "B"]] ".A,B"
-    , Test "{.%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] ".A,1,B,2"
-    , Test "{.%aa*}" ["%aa" =: s "A"] ".A"
-    , Test "{.%aa*}" ["%aa" =: l ["A", "B"]] ".A.B"
-    , Test "{.%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] ".A=1.B=2"
-    , Test "{/a}" [] ""
-    , Test "{/a}" ["a" =: l []] ""
-    , Test "{/a}" ["a" =: d []] ""
-    , Test "{/a}" ["a" =: s ""] "/"
-    , Test "{/a}" ["a" =: s "A"] "/A"
-    , Test "{/a}" ["a" =: s "~"] "/~"
-    , Test "{/a}" ["a" =: s "%"] "/%25"
-    , Test "{/a}" ["a" =: s "?"] "/%3F"
-    , Test "{/a}" ["a" =: s "&"] "/%26"
-    , Test "{/a}" ["a" =: s "\xa0"] "/%C2%A0"
-    , Test "{/a}" ["a" =: s "\xd7ff"] "/%ED%9F%BF"
-    , Test "{/a}" ["a" =: s "\x10000"] "/%F0%90%80%80"
-    , Test "{/a}" ["a" =: l ["A"]] "/A"
-    , Test "{/a}" ["a" =: l ["A", "B"]] "/A,B"
-    , Test "{/a}" ["a" =: l ["%"]] "/%25"
-    , Test "{/a}" ["a" =: l ["\xa0"]] "/%C2%A0"
-    , Test "{/a}" ["a" =: d ["A" =: "1"]] "/A,1"
-    , Test "{/a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "/A,1,B,2"
-    , Test "{/a}" ["a" =: d ["A" =: "%"]] "/A,%25"
-    , Test "{/a}" ["a" =: d ["A" =: "\xa0"]] "/A,%C2%A0"
-    , Test "{/a}" ["a" =: d ["%" =: "1"]] "/%25,1"
-    , Test "{/a*}" [] ""
-    , Test "{/a*}" ["a" =: s ""] "/"
-    , Test "{/a*}" ["a" =: s "A"] "/A"
-    , Test "{/a*}" ["a" =: l []] ""
-    , Test "{/a*}" ["a" =: l ["A"]] "/A"
-    , Test "{/a*}" ["a" =: l ["A", "B"]] "/A/B"
-    , Test "{/a*}" ["a" =: d []] ""
-    , Test "{/a*}" ["a" =: d ["A" =: "1"]] "/A=1"
-    , Test "{/a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "/A=1/B=2"
-    , Test "{/a:1}" [] ""
-    , Test "{/a:1}" ["a" =: s ""] "/"
-    , Test "{/a:1}" ["a" =: s "A"] "/A"
-    , Test "{/a:1}" ["a" =: s "AB"] "/A"
-    , Test "{/a:1}" ["a" =: s "%B"] "/%25"
-    , Test "{/a:1}" ["a" =: s "\xa0\&B"] "/%C2%A0"
-    , Test "{/a:1}" ["a" =: s "\xd7ff\&B"] "/%ED%9F%BF"
-    , Test "{/a:1}" ["a" =: s "\x10000\&B"] "/%F0%90%80%80"
-    , Test "{/a:1}" ["a" =: l []] ""
-    , Test "{/a:1}" ["a" =: l ["AB"]] "/AB"
-    , Test "{/a:1}" ["a" =: l ["AB", "CD"]] "/AB,CD"
-    , Test "{/a:1}" ["a" =: d []] ""
-    , Test "{/a:1}" ["a" =: d ["AB" =: "12"]] "/AB,12"
-    , Test "{/a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "/AB,12,CD,34"
-    , Test "{/a,a}" [] ""
-    , Test "{/a,a}" ["a" =: l []] ""
-    , Test "{/a,a}" ["a" =: d []] ""
-    , Test "{/a,a}" ["a" =: s ""] "//"
-    , Test "{/a,b}" ["a" =: s ""] "/"
-    , Test "{/a,b}" ["b" =: s ""] "/"
-    , Test "{/%aa}" ["%aa" =: s "A"] "/A"
-    , Test "{/%aa}" ["%aa" =: l ["A", "B"]] "/A,B"
-    , Test "{/%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "/A,1,B,2"
-    , Test "{/%aa*}" ["%aa" =: s "A"] "/A"
-    , Test "{/%aa*}" ["%aa" =: l ["A", "B"]] "/A/B"
-    , Test "{/%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "/A=1/B=2"
-    , Test "{;a}" [] ""
-    , Test "{;a}" ["a" =: l []] ""
-    , Test "{;a}" ["a" =: d []] ""
-    , Test "{;a}" ["a" =: s ""] ";a"
-    , Test "{;a}" ["a" =: s "A"] ";a=A"
-    , Test "{;a}" ["a" =: s "~"] ";a=~"
-    , Test "{;a}" ["a" =: s "%"] ";a=%25"
-    , Test "{;a}" ["a" =: s "?"] ";a=%3F"
-    , Test "{;a}" ["a" =: s "&"] ";a=%26"
-    , Test "{;a}" ["a" =: s "\xa0"] ";a=%C2%A0"
-    , Test "{;a}" ["a" =: s "\xd7ff"] ";a=%ED%9F%BF"
-    , Test "{;a}" ["a" =: s "\x10000"] ";a=%F0%90%80%80"
-    , Test "{;a}" ["a" =: l ["A"]] ";a=A"
-    , Test "{;a}" ["a" =: l ["A", "B"]] ";a=A,B"
-    , Test "{;a}" ["a" =: l ["%"]] ";a=%25"
-    , Test "{;a}" ["a" =: l ["\xa0"]] ";a=%C2%A0"
-    , Test "{;a}" ["a" =: d ["A" =: "1"]] ";a=A,1"
-    , Test "{;a}" ["a" =: d ["A" =: "1", "B" =: "2"]] ";a=A,1,B,2"
-    , Test "{;a}" ["a" =: d ["A" =: "%"]] ";a=A,%25"
-    , Test "{;a}" ["a" =: d ["A" =: "\xa0"]] ";a=A,%C2%A0"
-    , Test "{;a}" ["a" =: d ["%" =: "1"]] ";a=%25,1"
-    , Test "{;a*}" [] ""
-    , Test "{;a*}" ["a" =: s ""] ";a"
-    , Test "{;a*}" ["a" =: s "A"] ";a=A"
-    , Test "{;a*}" ["a" =: l []] ""
-    , Test "{;a*}" ["a" =: l ["A"]] ";a=A"
-    , Test "{;a*}" ["a" =: l ["A", "B"]] ";a=A;a=B"
-    , Test "{;a*}" ["a" =: d []] ""
-    , Test "{;a*}" ["a" =: d ["A" =: "1"]] ";A=1"
-    , Test "{;a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] ";A=1;B=2"
-    , Test "{;a:1}" [] ""
-    , Test "{;a:1}" ["a" =: s ""] ";a"
-    , Test "{;a:1}" ["a" =: s "A"] ";a=A"
-    , Test "{;a:1}" ["a" =: s "AB"] ";a=A"
-    , Test "{;a:1}" ["a" =: s "%B"] ";a=%25"
-    , Test "{;a:1}" ["a" =: s "\xa0\&B"] ";a=%C2%A0"
-    , Test "{;a:1}" ["a" =: s "\xd7ff\&B"] ";a=%ED%9F%BF"
-    , Test "{;a:1}" ["a" =: s "\x10000\&B"] ";a=%F0%90%80%80"
-    , Test "{;a:1}" ["a" =: l []] ""
-    , Test "{;a:1}" ["a" =: l ["AB"]] ";a=AB"
-    , Test "{;a:1}" ["a" =: l ["AB", "CD"]] ";a=AB,CD"
-    , Test "{;a:1}" ["a" =: d []] ""
-    , Test "{;a:1}" ["a" =: d ["AB" =: "12"]] ";a=AB,12"
-    , Test "{;a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] ";a=AB,12,CD,34"
-    , Test "{;a,a}" [] ""
-    , Test "{;a,a}" ["a" =: l []] ""
-    , Test "{;a,a}" ["a" =: d []] ""
-    , Test "{;a,a}" ["a" =: s ""] ";a;a"
-    , Test "{;a,b}" ["a" =: s ""] ";a"
-    , Test "{;a,b}" ["b" =: s ""] ";b"
-    , Test "{;%aa}" ["%aa" =: s "A"] ";%aa=A"
-    , Test "{;%aa}" ["%aa" =: l ["A", "B"]] ";%aa=A,B"
-    , Test "{;%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] ";%aa=A,1,B,2"
-    , Test "{;%aa*}" ["%aa" =: s "A"] ";%aa=A"
-    , Test "{;%aa*}" ["%aa" =: l ["A", "B"]] ";%aa=A;%aa=B"
-    , Test "{;%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] ";A=1;B=2"
-    , Test "{?a}" [] ""
-    , Test "{?a}" ["a" =: l []] ""
-    , Test "{?a}" ["a" =: d []] ""
-    , Test "{?a}" ["a" =: s ""] "?a="
-    , Test "{?a}" ["a" =: s "A"] "?a=A"
-    , Test "{?a}" ["a" =: s "~"] "?a=~"
-    , Test "{?a}" ["a" =: s "%"] "?a=%25"
-    , Test "{?a}" ["a" =: s "?"] "?a=%3F"
-    , Test "{?a}" ["a" =: s "&"] "?a=%26"
-    , Test "{?a}" ["a" =: s "\xa0"] "?a=%C2%A0"
-    , Test "{?a}" ["a" =: s "\xd7ff"] "?a=%ED%9F%BF"
-    , Test "{?a}" ["a" =: s "\x10000"] "?a=%F0%90%80%80"
-    , Test "{?a}" ["a" =: l ["A"]] "?a=A"
-    , Test "{?a}" ["a" =: l ["A", "B"]] "?a=A,B"
-    , Test "{?a}" ["a" =: l ["%"]] "?a=%25"
-    , Test "{?a}" ["a" =: l ["\xa0"]] "?a=%C2%A0"
-    , Test "{?a}" ["a" =: d ["A" =: "1"]] "?a=A,1"
-    , Test "{?a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "?a=A,1,B,2"
-    , Test "{?a}" ["a" =: d ["A" =: "%"]] "?a=A,%25"
-    , Test "{?a}" ["a" =: d ["A" =: "\xa0"]] "?a=A,%C2%A0"
-    , Test "{?a}" ["a" =: d ["%" =: "1"]] "?a=%25,1"
-    , Test "{?a*}" [] ""
-    , Test "{?a*}" ["a" =: s ""] "?a="
-    , Test "{?a*}" ["a" =: s "A"] "?a=A"
-    , Test "{?a*}" ["a" =: l []] ""
-    , Test "{?a*}" ["a" =: l ["A"]] "?a=A"
-    , Test "{?a*}" ["a" =: l ["A", "B"]] "?a=A&a=B"
-    , Test "{?a*}" ["a" =: d []] ""
-    , Test "{?a*}" ["a" =: d ["A" =: "1"]] "?A=1"
-    , Test "{?a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "?A=1&B=2"
-    , Test "{?a:1}" [] ""
-    , Test "{?a:1}" ["a" =: s ""] "?a="
-    , Test "{?a:1}" ["a" =: s "A"] "?a=A"
-    , Test "{?a:1}" ["a" =: s "AB"] "?a=A"
-    , Test "{?a:1}" ["a" =: s "%B"] "?a=%25"
-    , Test "{?a:1}" ["a" =: s "\xa0\&B"] "?a=%C2%A0"
-    , Test "{?a:1}" ["a" =: s "\xd7ff\&B"] "?a=%ED%9F%BF"
-    , Test "{?a:1}" ["a" =: s "\x10000\&B"] "?a=%F0%90%80%80"
-    , Test "{?a:1}" ["a" =: l []] ""
-    , Test "{?a:1}" ["a" =: l ["AB"]] "?a=AB"
-    , Test "{?a:1}" ["a" =: l ["AB", "CD"]] "?a=AB,CD"
-    , Test "{?a:1}" ["a" =: d []] ""
-    , Test "{?a:1}" ["a" =: d ["AB" =: "12"]] "?a=AB,12"
-    , Test "{?a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "?a=AB,12,CD,34"
-    , Test "{?a,a}" [] ""
-    , Test "{?a,a}" ["a" =: l []] ""
-    , Test "{?a,a}" ["a" =: d []] ""
-    , Test "{?a,a}" ["a" =: s ""] "?a=&a="
-    , Test "{?a,b}" ["a" =: s ""] "?a="
-    , Test "{?a,b}" ["b" =: s ""] "?b="
-    , Test "{?%aa}" ["%aa" =: s "A"] "?%aa=A"
-    , Test "{?%aa}" ["%aa" =: l ["A", "B"]] "?%aa=A,B"
-    , Test "{?%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "?%aa=A,1,B,2"
-    , Test "{?%aa*}" ["%aa" =: s "A"] "?%aa=A"
-    , Test "{?%aa*}" ["%aa" =: l ["A", "B"]] "?%aa=A&%aa=B"
-    , Test "{?%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "?A=1&B=2"
-    , Test "{&a}" [] ""
-    , Test "{&a}" ["a" =: l []] ""
-    , Test "{&a}" ["a" =: d []] ""
-    , Test "{&a}" ["a" =: s ""] "&a="
-    , Test "{&a}" ["a" =: s "A"] "&a=A"
-    , Test "{&a}" ["a" =: s "~"] "&a=~"
-    , Test "{&a}" ["a" =: s "%"] "&a=%25"
-    , Test "{&a}" ["a" =: s "?"] "&a=%3F"
-    , Test "{&a}" ["a" =: s "&"] "&a=%26"
-    , Test "{&a}" ["a" =: s "\xa0"] "&a=%C2%A0"
-    , Test "{&a}" ["a" =: s "\xd7ff"] "&a=%ED%9F%BF"
-    , Test "{&a}" ["a" =: s "\x10000"] "&a=%F0%90%80%80"
-    , Test "{&a}" ["a" =: l ["A"]] "&a=A"
-    , Test "{&a}" ["a" =: l ["A", "B"]] "&a=A,B"
-    , Test "{&a}" ["a" =: l ["%"]] "&a=%25"
-    , Test "{&a}" ["a" =: l ["\xa0"]] "&a=%C2%A0"
-    , Test "{&a}" ["a" =: d ["A" =: "1"]] "&a=A,1"
-    , Test "{&a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "&a=A,1,B,2"
-    , Test "{&a}" ["a" =: d ["A" =: "%"]] "&a=A,%25"
-    , Test "{&a}" ["a" =: d ["A" =: "\xa0"]] "&a=A,%C2%A0"
-    , Test "{&a}" ["a" =: d ["%" =: "1"]] "&a=%25,1"
-    , Test "{&a*}" [] ""
-    , Test "{&a*}" ["a" =: s ""] "&a="
-    , Test "{&a*}" ["a" =: s "A"] "&a=A"
-    , Test "{&a*}" ["a" =: l []] ""
-    , Test "{&a*}" ["a" =: l ["A"]] "&a=A"
-    , Test "{&a*}" ["a" =: l ["A", "B"]] "&a=A&a=B"
-    , Test "{&a*}" ["a" =: d []] ""
-    , Test "{&a*}" ["a" =: d ["A" =: "1"]] "&A=1"
-    , Test "{&a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "&A=1&B=2"
-    , Test "{&a:1}" [] ""
-    , Test "{&a:1}" ["a" =: s ""] "&a="
-    , Test "{&a:1}" ["a" =: s "A"] "&a=A"
-    , Test "{&a:1}" ["a" =: s "AB"] "&a=A"
-    , Test "{&a:1}" ["a" =: s "%B"] "&a=%25"
-    , Test "{&a:1}" ["a" =: s "\xa0\&B"] "&a=%C2%A0"
-    , Test "{&a:1}" ["a" =: s "\xd7ff\&B"] "&a=%ED%9F%BF"
-    , Test "{&a:1}" ["a" =: s "\x10000\&B"] "&a=%F0%90%80%80"
-    , Test "{&a:1}" ["a" =: l []] ""
-    , Test "{&a:1}" ["a" =: l ["AB"]] "&a=AB"
-    , Test "{&a:1}" ["a" =: l ["AB", "CD"]] "&a=AB,CD"
-    , Test "{&a:1}" ["a" =: d []] ""
-    , Test "{&a:1}" ["a" =: d ["AB" =: "12"]] "&a=AB,12"
-    , Test "{&a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "&a=AB,12,CD,34"
-    , Test "{&a,a}" [] ""
-    , Test "{&a,a}" ["a" =: l []] ""
-    , Test "{&a,a}" ["a" =: d []] ""
-    , Test "{&a,a}" ["a" =: s ""] "&a=&a="
-    , Test "{&a,b}" ["a" =: s ""] "&a="
-    , Test "{&a,b}" ["b" =: s ""] "&b="
-    , Test "{&%aa}" ["%aa" =: s "A"] "&%aa=A"
-    , Test "{&%aa}" ["%aa" =: l ["A", "B"]] "&%aa=A,B"
-    , Test "{&%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "&%aa=A,1,B,2"
-    , Test "{&%aa*}" ["%aa" =: s "A"] "&%aa=A"
-    , Test "{&%aa*}" ["%aa" =: l ["A", "B"]] "&%aa=A&%aa=B"
-    , Test "{&%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "&A=1&B=2"
+tests =
+  mconcat
+    [ [ Test "" [] "",
+        Test "" ["a" =: s ""] "",
+        Test "" ["a" =: l []] "",
+        Test "" ["a" =: d []] "",
+        Test "!" [] "!",
+        Test "#" [] "#",
+        Test "$" [] "$",
+        Test "&" [] "&",
+        Test "(" [] "(",
+        Test ")" [] ")",
+        Test "*" [] "*",
+        Test "+" [] "+",
+        Test "," [] ",",
+        Test "-" [] "-",
+        Test "." [] ".",
+        Test "/" [] "/",
+        Test "0" [] "0",
+        Test "9" [] "9",
+        Test ":" [] ":",
+        Test ";" [] ";",
+        Test "=" [] "=",
+        Test "?" [] "?",
+        Test "@" [] "@",
+        Test "A" [] "A",
+        Test "Z" [] "Z",
+        Test "[" [] "[",
+        Test "]" [] "]",
+        Test "_" [] "_",
+        Test "a" [] "a",
+        Test "z" [] "z",
+        Test "~" [] "~",
+        Test "\xa0" [] "%C2%A0",
+        Test "\xd7ff" [] "%ED%9F%BF",
+        Test "\xf900" [] "%EF%A4%80",
+        Test "\xfdcf" [] "%EF%B7%8F",
+        Test "\xfdf0" [] "%EF%B7%B0",
+        Test "\xffef" [] "%EF%BF%AF",
+        Test "\x10000" [] "%F0%90%80%80",
+        Test "\x1fffd" [] "%F0%9F%BF%BD",
+        Test "\x20000" [] "%F0%A0%80%80",
+        Test "\x2fffd" [] "%F0%AF%BF%BD",
+        Test "\x30000" [] "%F0%B0%80%80",
+        Test "\x3fffd" [] "%F0%BF%BF%BD",
+        Test "\x40000" [] "%F1%80%80%80",
+        Test "\x4fffd" [] "%F1%8F%BF%BD",
+        Test "\x50000" [] "%F1%90%80%80",
+        Test "\x5fffd" [] "%F1%9F%BF%BD",
+        Test "\x60000" [] "%F1%A0%80%80",
+        Test "\x6fffd" [] "%F1%AF%BF%BD",
+        Test "\x70000" [] "%F1%B0%80%80",
+        Test "\x7fffd" [] "%F1%BF%BF%BD",
+        Test "\x80000" [] "%F2%80%80%80",
+        Test "\x8fffd" [] "%F2%8F%BF%BD",
+        Test "\x90000" [] "%F2%90%80%80",
+        Test "\x9fffd" [] "%F2%9F%BF%BD",
+        Test "\xa0000" [] "%F2%A0%80%80",
+        Test "\xafffd" [] "%F2%AF%BF%BD",
+        Test "\xb0000" [] "%F2%B0%80%80",
+        Test "\xbfffd" [] "%F2%BF%BF%BD",
+        Test "\xc0000" [] "%F3%80%80%80",
+        Test "\xcfffd" [] "%F3%8F%BF%BD",
+        Test "\xd0000" [] "%F3%90%80%80",
+        Test "\xdfffd" [] "%F3%9F%BF%BD",
+        Test "\xe1000" [] "%F3%A1%80%80",
+        Test "\xefffd" [] "%F3%AF%BF%BD",
+        Test "\xe000" [] "%EE%80%80",
+        Test "\xf8ff" [] "%EF%A3%BF",
+        Test "\xf0000" [] "%F3%B0%80%80",
+        Test "\xffffd" [] "%F3%BF%BF%BD",
+        Test "\x100000" [] "%F4%80%80%80",
+        Test "\x10fffd" [] "%F4%8F%BF%BD",
+        Test "%00" [] "%00",
+        Test "%AA" [] "%AA",
+        Test "%Aa" [] "%Aa",
+        Test "%aA" [] "%aA",
+        Test "%aa" [] "%aa",
+        Test "%" [] noParse,
+        Test "%0" [] noParse,
+        Test "%0z" [] noParse,
+        Test "%z" [] noParse,
+        Test "%30" [] "%30",
+        Test " " [] noParse,
+        Test "\"" [] noParse,
+        Test "'" [] noParse,
+        Test "%" [] noParse,
+        Test "<" [] noParse,
+        Test ">" [] noParse,
+        Test "\\" [] noParse,
+        Test "^" [] noParse,
+        Test "`" [] noParse,
+        Test "{" [] noParse,
+        Test "|" [] noParse,
+        Test "}" [] noParse,
+        Test "{}" [] noParse,
+        Test "{,}" [] noParse,
+        Test "{a,,b}" [] noParse,
+        Test "{+}" [] noParse,
+        Test "{:1}" [] noParse,
+        Test "{*}" [] noParse,
+        Test "{AZ}" [] "",
+        Test "{az}" [] "",
+        Test "{09}" [] "",
+        Test "{_a}" [] "",
+        Test "{a_}" [] "",
+        Test "{_}" [] "",
+        Test "{A.A}" [] "",
+        Test "{a.a}" [] "",
+        Test "{0.0}" [] "",
+        Test "{_._}" [] "",
+        Test "{%aa.%aa}" [] "",
+        Test "{.}" [] noParse,
+        Test "{a.}" [] noParse,
+        Test "{+.a}" [] noParse,
+        Test "{a..b}" [] noParse,
+        Test "{%00}" [] "",
+        Test "{%}" [] noParse,
+        Test "{%0}" [] noParse,
+        Test "{%0z}" [] noParse,
+        Test "{%z}" [] noParse,
+        Test "{!}" [] noParse,
+        Test "{" [] noParse,
+        Test "{{}" [] noParse,
+        Test "}" [] noParse,
+        Test "{}}" [] noParse,
+        Test "{a,b}" [] "",
+        Test "{a,b,c,d}" [] "",
+        Test "{a,a}" [] "",
+        Test "{a:5}" [] "",
+        Test "{a:67}" [] "",
+        Test "{a:801}" [] "",
+        Test "{a:234}" [] "",
+        Test "{a:9999}" [] "",
+        Test "{a:123}" ["a" =: s (replicate 200 'a')] . Output . Just $ replicate 123 'a',
+        Test "{a:}" [] noParse,
+        Test "{a:0}" [] noParse,
+        Test "{a:10000}" [] noParse,
+        Test "{a:-1}" [] noParse,
+        Test "{a*}" [] "",
+        Test "{a:1*}" [] noParse,
+        Test "{a*:1}" [] noParse,
+        Test "{a,b:1,c*}" [] "",
+        Test "{+a}" [] "",
+        Test "{#a}" [] "",
+        Test "{.a}" [] "",
+        Test "{/a}" [] "",
+        Test "{;a}" [] "",
+        Test "{?a}" [] "",
+        Test "{&a}" [] "",
+        Test "{=a}" [] noParse,
+        Test "{,a}" [] noParse,
+        Test "{!a}" [] noParse,
+        Test "{@a}" [] noParse,
+        Test "{|a}" [] noParse,
+        Test "{+#a}" [] noParse,
+        Test "{+a,#b}" [] noParse,
+        Test "{+a:1}" [] "",
+        Test "{#a*}" [] "",
+        Test "{+a,b}" [] "",
+        Test "{#a,b}" [] "",
+        Test "{.a,b}" [] "",
+        Test "{/a,b}" [] "",
+        Test "{;a,b}" [] "",
+        Test "{?a,b}" [] "",
+        Test "{&a,b}" [] "",
+        Test "{a}{b}" [] "",
+        Test "{a}{b}{c}{d}" [] "",
+        Test "{a}{a}" [] "",
+        Test "{{}}" [] noParse,
+        Test "{a{b}}" [] noParse,
+        Test "{{a}b}" [] noParse,
+        Test "{a{b}c}" [] noParse,
+        Test "a{b}" [] "a",
+        Test "{a}b" [] "b",
+        Test "a{b}c" [] "ac",
+        Test "{a}b{c}" [] "b",
+        Test "{a}" [] "",
+        Test "{+a}" [] "",
+        Test "{#a}" [] "",
+        Test "{.a}" [] "",
+        Test "{/a}" [] "",
+        Test "{;a}" [] "",
+        Test "{?a}" [] "",
+        Test "{&a}" [] "",
+        Test "http://example.com/~{username}/" ["username" =: s "fred"] "http://example.com/~fred/",
+        Test "http://example.com/~{username}/" ["username" =: s "mark"] "http://example.com/~mark/",
+        Test "http://example.com/dictionary/{term:1}/{term}" ["term" =: s "cat"] "http://example.com/dictionary/c/cat",
+        Test "http://example.com/dictionary/{term:1}/{term}" ["term" =: s "dog"] "http://example.com/dictionary/d/dog",
+        Test "http://example.com/search{?q,lang}" ["q" =: s "cat", "lang" =: s "en"] "http://example.com/search?q=cat&lang=en",
+        Test "http://example.com/search{?q,lang}" ["q" =: s "chien", "lang" =: s "fr"] "http://example.com/search?q=chien&lang=fr",
+        Test "http://www.example.com/foo{?query,number}" ["query" =: s "mycelium", "number" =: s "100"] "http://www.example.com/foo?query=mycelium&number=100",
+        Test "http://www.example.com/foo{?query,number}" ["number" =: s "100"] "http://www.example.com/foo?number=100",
+        Test "http://www.example.com/foo{?query,number}" [] "http://www.example.com/foo",
+        Test "{a}" [] "",
+        Test "{a}" ["a" =: l []] "",
+        Test "{a}" ["a" =: d []] "",
+        Test "{a}" ["a" =: s ""] "",
+        Test "{a}" ["a" =: s "A"] "A",
+        Test "{a}" ["a" =: s "~"] "~",
+        Test "{a}" ["a" =: s "%"] "%25",
+        Test "{a}" ["a" =: s "?"] "%3F",
+        Test "{a}" ["a" =: s "&"] "%26",
+        Test "{a}" ["a" =: s "\xa0"] "%C2%A0",
+        Test "{a}" ["a" =: s "\xd7ff"] "%ED%9F%BF",
+        Test "{a}" ["a" =: s "\x10000"] "%F0%90%80%80",
+        Test "{a}" ["a" =: l ["A"]] "A",
+        Test "{a}" ["a" =: l ["A", "B"]] "A,B",
+        Test "{a}" ["a" =: l ["%"]] "%25",
+        Test "{a}" ["a" =: l ["\xa0"]] "%C2%A0",
+        Test "{a}" ["a" =: d ["A" =: "1"]] "A,1",
+        Test "{a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "A,1,B,2",
+        Test "{a}" ["a" =: d ["A" =: "%"]] "A,%25",
+        Test "{a}" ["a" =: d ["A" =: "\xa0"]] "A,%C2%A0",
+        Test "{a}" ["a" =: d ["%" =: "1"]] "%25,1",
+        Test "{a*}" [] "",
+        Test "{a*}" ["a" =: s ""] "",
+        Test "{a*}" ["a" =: s "A"] "A",
+        Test "{a*}" ["a" =: l []] "",
+        Test "{a*}" ["a" =: l ["A"]] "A",
+        Test "{a*}" ["a" =: l ["A", "B"]] "A,B",
+        Test "{a*}" ["a" =: d []] "",
+        Test "{a*}" ["a" =: d ["A" =: "1"]] "A=1",
+        Test "{a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "A=1,B=2",
+        Test "{a:1}" [] "",
+        Test "{a:1}" ["a" =: s ""] "",
+        Test "{a:1}" ["a" =: s "A"] "A",
+        Test "{a:1}" ["a" =: s "AB"] "A",
+        Test "{a:1}" ["a" =: s "%B"] "%25",
+        Test "{a:1}" ["a" =: s "\xa0\&B"] "%C2%A0",
+        Test "{a:1}" ["a" =: s "\xd7ff\&B"] "%ED%9F%BF",
+        Test "{a:1}" ["a" =: s "\x10000\&B"] "%F0%90%80%80",
+        Test "{a:1}" ["a" =: l []] "",
+        Test "{a:1}" ["a" =: l ["AB"]] "AB",
+        Test "{a:1}" ["a" =: l ["AB", "CD"]] "AB,CD",
+        Test "{a:1}" ["a" =: d []] "",
+        Test "{a:1}" ["a" =: d ["AB" =: "12"]] "AB,12",
+        Test "{a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "AB,12,CD,34",
+        Test "{a,a}" [] "",
+        Test "{a,a}" ["a" =: l []] "",
+        Test "{a,a}" ["a" =: d []] "",
+        Test "{a,a}" ["a" =: s ""] ",",
+        Test "{a,b}" ["a" =: s ""] "",
+        Test "{a,b}" ["b" =: s ""] "",
+        Test "{%aa}" ["%aa" =: s "A"] "A",
+        Test "{%aa}" ["%aa" =: l ["A", "B"]] "A,B",
+        Test "{%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "A,1,B,2",
+        Test "{%aa*}" ["%aa" =: s "A"] "A",
+        Test "{%aa*}" ["%aa" =: l ["A", "B"]] "A,B",
+        Test "{%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "A=1,B=2",
+        Test "{+a}" [] "",
+        Test "{+a}" ["a" =: l []] "",
+        Test "{+a}" ["a" =: d []] "",
+        Test "{+a}" ["a" =: s ""] "",
+        Test "{+a}" ["a" =: s "A"] "A",
+        Test "{+a}" ["a" =: s "~"] "~",
+        Test "{+a}" ["a" =: s "%"] "%25",
+        Test "{+a}" ["a" =: s "?"] "?",
+        Test "{+a}" ["a" =: s "&"] "&",
+        Test "{+a}" ["a" =: s "\xa0"] "%C2%A0",
+        Test "{+a}" ["a" =: s "\xd7ff"] "%ED%9F%BF",
+        Test "{+a}" ["a" =: s "\x10000"] "%F0%90%80%80",
+        Test "{+a}" ["a" =: l ["A"]] "A",
+        Test "{+a}" ["a" =: l ["A", "B"]] "A,B",
+        Test "{+a}" ["a" =: l ["%"]] "%25",
+        Test "{+a}" ["a" =: l ["\xa0"]] "%C2%A0",
+        Test "{+a}" ["a" =: d ["A" =: "1"]] "A,1",
+        Test "{+a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "A,1,B,2",
+        Test "{+a}" ["a" =: d ["A" =: "%"]] "A,%25",
+        Test "{+a}" ["a" =: d ["A" =: "\xa0"]] "A,%C2%A0",
+        Test "{+a}" ["a" =: d ["%" =: "1"]] "%25,1",
+        Test "{+a*}" [] "",
+        Test "{+a*}" ["a" =: s ""] "",
+        Test "{+a*}" ["a" =: s "A"] "A",
+        Test "{+a*}" ["a" =: l []] "",
+        Test "{+a*}" ["a" =: l ["A"]] "A",
+        Test "{+a*}" ["a" =: l ["A", "B"]] "A,B",
+        Test "{+a*}" ["a" =: d []] "",
+        Test "{+a*}" ["a" =: d ["A" =: "1"]] "A=1",
+        Test "{+a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "A=1,B=2",
+        Test "{+a:1}" [] "",
+        Test "{+a:1}" ["a" =: s ""] "",
+        Test "{+a:1}" ["a" =: s "A"] "A",
+        Test "{+a:1}" ["a" =: s "AB"] "A",
+        Test "{+a:1}" ["a" =: s "%B"] "%25",
+        Test "{+a:1}" ["a" =: s "\xa0\&B"] "%C2%A0",
+        Test "{+a:1}" ["a" =: s "\xd7ff\&B"] "%ED%9F%BF",
+        Test "{+a:1}" ["a" =: s "\x10000\&B"] "%F0%90%80%80",
+        Test "{+a:1}" ["a" =: l []] "",
+        Test "{+a:1}" ["a" =: l ["AB"]] "AB",
+        Test "{+a:1}" ["a" =: l ["AB", "CD"]] "AB,CD",
+        Test "{+a:1}" ["a" =: d []] "",
+        Test "{+a:1}" ["a" =: d ["AB" =: "12"]] "AB,12",
+        Test "{+a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "AB,12,CD,34",
+        Test "{+a,a}" [] "",
+        Test "{+a,a}" ["a" =: l []] "",
+        Test "{+a,a}" ["a" =: d []] "",
+        Test "{+a,a}" ["a" =: s ""] ",",
+        Test "{+a,b}" ["a" =: s ""] "",
+        Test "{+a,b}" ["b" =: s ""] "",
+        Test "{+%aa}" ["%aa" =: s "A"] "A",
+        Test "{+%aa}" ["%aa" =: l ["A", "B"]] "A,B",
+        Test "{+%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "A,1,B,2",
+        Test "{+%aa*}" ["%aa" =: s "A"] "A",
+        Test "{+%aa*}" ["%aa" =: l ["A", "B"]] "A,B",
+        Test "{+%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "A=1,B=2",
+        Test "{#a}" [] "",
+        Test "{#a}" ["a" =: l []] "",
+        Test "{#a}" ["a" =: d []] "",
+        Test "{#a}" ["a" =: s ""] "#",
+        Test "{#a}" ["a" =: s "A"] "#A",
+        Test "{#a}" ["a" =: s "~"] "#~",
+        Test "{#a}" ["a" =: s "%"] "#%25",
+        Test "{#a}" ["a" =: s "?"] "#?",
+        Test "{#a}" ["a" =: s "&"] "#&",
+        Test "{#a}" ["a" =: s "\xa0"] "#%C2%A0",
+        Test "{#a}" ["a" =: s "\xd7ff"] "#%ED%9F%BF",
+        Test "{#a}" ["a" =: s "\x10000"] "#%F0%90%80%80",
+        Test "{#a}" ["a" =: l ["A"]] "#A",
+        Test "{#a}" ["a" =: l ["A", "B"]] "#A,B",
+        Test "{#a}" ["a" =: l ["%"]] "#%25",
+        Test "{#a}" ["a" =: l ["\xa0"]] "#%C2%A0",
+        Test "{#a}" ["a" =: d ["A" =: "1"]] "#A,1",
+        Test "{#a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "#A,1,B,2",
+        Test "{#a}" ["a" =: d ["A" =: "%"]] "#A,%25",
+        Test "{#a}" ["a" =: d ["A" =: "\xa0"]] "#A,%C2%A0",
+        Test "{#a}" ["a" =: d ["%" =: "1"]] "#%25,1",
+        Test "{#a*}" [] "",
+        Test "{#a*}" ["a" =: s ""] "#",
+        Test "{#a*}" ["a" =: s "A"] "#A",
+        Test "{#a*}" ["a" =: l []] "",
+        Test "{#a*}" ["a" =: l ["A"]] "#A",
+        Test "{#a*}" ["a" =: l ["A", "B"]] "#A,B",
+        Test "{#a*}" ["a" =: d []] "",
+        Test "{#a*}" ["a" =: d ["A" =: "1"]] "#A=1",
+        Test "{#a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "#A=1,B=2",
+        Test "{#a:1}" [] "",
+        Test "{#a:1}" ["a" =: s ""] "#",
+        Test "{#a:1}" ["a" =: s "A"] "#A",
+        Test "{#a:1}" ["a" =: s "AB"] "#A",
+        Test "{#a:1}" ["a" =: s "%B"] "#%25",
+        Test "{#a:1}" ["a" =: s "\xa0\&B"] "#%C2%A0",
+        Test "{#a:1}" ["a" =: s "\xd7ff\&B"] "#%ED%9F%BF",
+        Test "{#a:1}" ["a" =: s "\x10000\&B"] "#%F0%90%80%80",
+        Test "{#a:1}" ["a" =: l []] "",
+        Test "{#a:1}" ["a" =: l ["AB"]] "#AB",
+        Test "{#a:1}" ["a" =: l ["AB", "CD"]] "#AB,CD",
+        Test "{#a:1}" ["a" =: d []] "",
+        Test "{#a:1}" ["a" =: d ["AB" =: "12"]] "#AB,12",
+        Test "{#a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "#AB,12,CD,34",
+        Test "{#a,a}" [] "",
+        Test "{#a,a}" ["a" =: l []] "",
+        Test "{#a,a}" ["a" =: d []] "",
+        Test "{#a,a}" ["a" =: s ""] "#,",
+        Test "{#a,b}" ["a" =: s ""] "#",
+        Test "{#a,b}" ["b" =: s ""] "#",
+        Test "{#%aa}" ["%aa" =: s "A"] "#A",
+        Test "{#%aa}" ["%aa" =: l ["A", "B"]] "#A,B",
+        Test "{#%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "#A,1,B,2",
+        Test "{#%aa*}" ["%aa" =: s "A"] "#A",
+        Test "{#%aa*}" ["%aa" =: l ["A", "B"]] "#A,B",
+        Test "{#%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "#A=1,B=2",
+        Test "{.a}" [] "",
+        Test "{.a}" ["a" =: l []] "",
+        Test "{.a}" ["a" =: d []] "",
+        Test "{.a}" ["a" =: s ""] ".",
+        Test "{.a}" ["a" =: s "A"] ".A",
+        Test "{.a}" ["a" =: s "~"] ".~",
+        Test "{.a}" ["a" =: s "%"] ".%25",
+        Test "{.a}" ["a" =: s "?"] ".%3F",
+        Test "{.a}" ["a" =: s "&"] ".%26",
+        Test "{.a}" ["a" =: s "\xa0"] ".%C2%A0",
+        Test "{.a}" ["a" =: s "\xd7ff"] ".%ED%9F%BF",
+        Test "{.a}" ["a" =: s "\x10000"] ".%F0%90%80%80",
+        Test "{.a}" ["a" =: l ["A"]] ".A",
+        Test "{.a}" ["a" =: l ["A", "B"]] ".A,B",
+        Test "{.a}" ["a" =: l ["%"]] ".%25",
+        Test "{.a}" ["a" =: l ["\xa0"]] ".%C2%A0",
+        Test "{.a}" ["a" =: d ["A" =: "1"]] ".A,1",
+        Test "{.a}" ["a" =: d ["A" =: "1", "B" =: "2"]] ".A,1,B,2",
+        Test "{.a}" ["a" =: d ["A" =: "%"]] ".A,%25",
+        Test "{.a}" ["a" =: d ["A" =: "\xa0"]] ".A,%C2%A0",
+        Test "{.a}" ["a" =: d ["%" =: "1"]] ".%25,1",
+        Test "{.a*}" [] "",
+        Test "{.a*}" ["a" =: s ""] ".",
+        Test "{.a*}" ["a" =: s "A"] ".A",
+        Test "{.a*}" ["a" =: l []] "",
+        Test "{.a*}" ["a" =: l ["A"]] ".A",
+        Test "{.a*}" ["a" =: l ["A", "B"]] ".A.B",
+        Test "{.a*}" ["a" =: d []] "",
+        Test "{.a*}" ["a" =: d ["A" =: "1"]] ".A=1",
+        Test "{.a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] ".A=1.B=2",
+        Test "{.a:1}" [] "",
+        Test "{.a:1}" ["a" =: s ""] ".",
+        Test "{.a:1}" ["a" =: s "A"] ".A",
+        Test "{.a:1}" ["a" =: s "AB"] ".A",
+        Test "{.a:1}" ["a" =: s "%B"] ".%25",
+        Test "{.a:1}" ["a" =: s "\xa0\&B"] ".%C2%A0",
+        Test "{.a:1}" ["a" =: s "\xd7ff\&B"] ".%ED%9F%BF",
+        Test "{.a:1}" ["a" =: s "\x10000\&B"] ".%F0%90%80%80",
+        Test "{.a:1}" ["a" =: l []] "",
+        Test "{.a:1}" ["a" =: l ["AB"]] ".AB",
+        Test "{.a:1}" ["a" =: l ["AB", "CD"]] ".AB,CD",
+        Test "{.a:1}" ["a" =: d []] "",
+        Test "{.a:1}" ["a" =: d ["AB" =: "12"]] ".AB,12",
+        Test "{.a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] ".AB,12,CD,34",
+        Test "{.a,a}" [] "",
+        Test "{.a,a}" ["a" =: l []] "",
+        Test "{.a,a}" ["a" =: d []] "",
+        Test "{.a,a}" ["a" =: s ""] "..",
+        Test "{.a,b}" ["a" =: s ""] ".",
+        Test "{.a,b}" ["b" =: s ""] ".",
+        Test "{.%aa}" ["%aa" =: s "A"] ".A",
+        Test "{.%aa}" ["%aa" =: l ["A", "B"]] ".A,B",
+        Test "{.%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] ".A,1,B,2",
+        Test "{.%aa*}" ["%aa" =: s "A"] ".A",
+        Test "{.%aa*}" ["%aa" =: l ["A", "B"]] ".A.B",
+        Test "{.%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] ".A=1.B=2",
+        Test "{/a}" [] "",
+        Test "{/a}" ["a" =: l []] "",
+        Test "{/a}" ["a" =: d []] "",
+        Test "{/a}" ["a" =: s ""] "/",
+        Test "{/a}" ["a" =: s "A"] "/A",
+        Test "{/a}" ["a" =: s "~"] "/~",
+        Test "{/a}" ["a" =: s "%"] "/%25",
+        Test "{/a}" ["a" =: s "?"] "/%3F",
+        Test "{/a}" ["a" =: s "&"] "/%26",
+        Test "{/a}" ["a" =: s "\xa0"] "/%C2%A0",
+        Test "{/a}" ["a" =: s "\xd7ff"] "/%ED%9F%BF",
+        Test "{/a}" ["a" =: s "\x10000"] "/%F0%90%80%80",
+        Test "{/a}" ["a" =: l ["A"]] "/A",
+        Test "{/a}" ["a" =: l ["A", "B"]] "/A,B",
+        Test "{/a}" ["a" =: l ["%"]] "/%25",
+        Test "{/a}" ["a" =: l ["\xa0"]] "/%C2%A0",
+        Test "{/a}" ["a" =: d ["A" =: "1"]] "/A,1",
+        Test "{/a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "/A,1,B,2",
+        Test "{/a}" ["a" =: d ["A" =: "%"]] "/A,%25",
+        Test "{/a}" ["a" =: d ["A" =: "\xa0"]] "/A,%C2%A0",
+        Test "{/a}" ["a" =: d ["%" =: "1"]] "/%25,1",
+        Test "{/a*}" [] "",
+        Test "{/a*}" ["a" =: s ""] "/",
+        Test "{/a*}" ["a" =: s "A"] "/A",
+        Test "{/a*}" ["a" =: l []] "",
+        Test "{/a*}" ["a" =: l ["A"]] "/A",
+        Test "{/a*}" ["a" =: l ["A", "B"]] "/A/B",
+        Test "{/a*}" ["a" =: d []] "",
+        Test "{/a*}" ["a" =: d ["A" =: "1"]] "/A=1",
+        Test "{/a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "/A=1/B=2",
+        Test "{/a:1}" [] "",
+        Test "{/a:1}" ["a" =: s ""] "/",
+        Test "{/a:1}" ["a" =: s "A"] "/A",
+        Test "{/a:1}" ["a" =: s "AB"] "/A",
+        Test "{/a:1}" ["a" =: s "%B"] "/%25",
+        Test "{/a:1}" ["a" =: s "\xa0\&B"] "/%C2%A0",
+        Test "{/a:1}" ["a" =: s "\xd7ff\&B"] "/%ED%9F%BF",
+        Test "{/a:1}" ["a" =: s "\x10000\&B"] "/%F0%90%80%80",
+        Test "{/a:1}" ["a" =: l []] "",
+        Test "{/a:1}" ["a" =: l ["AB"]] "/AB",
+        Test "{/a:1}" ["a" =: l ["AB", "CD"]] "/AB,CD",
+        Test "{/a:1}" ["a" =: d []] "",
+        Test "{/a:1}" ["a" =: d ["AB" =: "12"]] "/AB,12",
+        Test "{/a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "/AB,12,CD,34",
+        Test "{/a,a}" [] "",
+        Test "{/a,a}" ["a" =: l []] "",
+        Test "{/a,a}" ["a" =: d []] "",
+        Test "{/a,a}" ["a" =: s ""] "//",
+        Test "{/a,b}" ["a" =: s ""] "/",
+        Test "{/a,b}" ["b" =: s ""] "/",
+        Test "{/%aa}" ["%aa" =: s "A"] "/A",
+        Test "{/%aa}" ["%aa" =: l ["A", "B"]] "/A,B",
+        Test "{/%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "/A,1,B,2",
+        Test "{/%aa*}" ["%aa" =: s "A"] "/A",
+        Test "{/%aa*}" ["%aa" =: l ["A", "B"]] "/A/B",
+        Test "{/%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "/A=1/B=2",
+        Test "{;a}" [] "",
+        Test "{;a}" ["a" =: l []] "",
+        Test "{;a}" ["a" =: d []] "",
+        Test "{;a}" ["a" =: s ""] ";a",
+        Test "{;a}" ["a" =: s "A"] ";a=A",
+        Test "{;a}" ["a" =: s "~"] ";a=~",
+        Test "{;a}" ["a" =: s "%"] ";a=%25",
+        Test "{;a}" ["a" =: s "?"] ";a=%3F",
+        Test "{;a}" ["a" =: s "&"] ";a=%26",
+        Test "{;a}" ["a" =: s "\xa0"] ";a=%C2%A0",
+        Test "{;a}" ["a" =: s "\xd7ff"] ";a=%ED%9F%BF",
+        Test "{;a}" ["a" =: s "\x10000"] ";a=%F0%90%80%80",
+        Test "{;a}" ["a" =: l ["A"]] ";a=A",
+        Test "{;a}" ["a" =: l ["A", "B"]] ";a=A,B",
+        Test "{;a}" ["a" =: l ["%"]] ";a=%25",
+        Test "{;a}" ["a" =: l ["\xa0"]] ";a=%C2%A0",
+        Test "{;a}" ["a" =: d ["A" =: "1"]] ";a=A,1",
+        Test "{;a}" ["a" =: d ["A" =: "1", "B" =: "2"]] ";a=A,1,B,2",
+        Test "{;a}" ["a" =: d ["A" =: "%"]] ";a=A,%25",
+        Test "{;a}" ["a" =: d ["A" =: "\xa0"]] ";a=A,%C2%A0",
+        Test "{;a}" ["a" =: d ["%" =: "1"]] ";a=%25,1",
+        Test "{;a*}" [] "",
+        Test "{;a*}" ["a" =: s ""] ";a",
+        Test "{;a*}" ["a" =: s "A"] ";a=A",
+        Test "{;a*}" ["a" =: l []] "",
+        Test "{;a*}" ["a" =: l ["A"]] ";a=A",
+        Test "{;a*}" ["a" =: l ["A", "B"]] ";a=A;a=B",
+        Test "{;a*}" ["a" =: d []] "",
+        Test "{;a*}" ["a" =: d ["A" =: "1"]] ";A=1",
+        Test "{;a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] ";A=1;B=2",
+        Test "{;a:1}" [] "",
+        Test "{;a:1}" ["a" =: s ""] ";a",
+        Test "{;a:1}" ["a" =: s "A"] ";a=A",
+        Test "{;a:1}" ["a" =: s "AB"] ";a=A",
+        Test "{;a:1}" ["a" =: s "%B"] ";a=%25",
+        Test "{;a:1}" ["a" =: s "\xa0\&B"] ";a=%C2%A0",
+        Test "{;a:1}" ["a" =: s "\xd7ff\&B"] ";a=%ED%9F%BF",
+        Test "{;a:1}" ["a" =: s "\x10000\&B"] ";a=%F0%90%80%80",
+        Test "{;a:1}" ["a" =: l []] "",
+        Test "{;a:1}" ["a" =: l ["AB"]] ";a=AB",
+        Test "{;a:1}" ["a" =: l ["AB", "CD"]] ";a=AB,CD",
+        Test "{;a:1}" ["a" =: d []] "",
+        Test "{;a:1}" ["a" =: d ["AB" =: "12"]] ";a=AB,12",
+        Test "{;a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] ";a=AB,12,CD,34",
+        Test "{;a,a}" [] "",
+        Test "{;a,a}" ["a" =: l []] "",
+        Test "{;a,a}" ["a" =: d []] "",
+        Test "{;a,a}" ["a" =: s ""] ";a;a",
+        Test "{;a,b}" ["a" =: s ""] ";a",
+        Test "{;a,b}" ["b" =: s ""] ";b",
+        Test "{;%aa}" ["%aa" =: s "A"] ";%aa=A",
+        Test "{;%aa}" ["%aa" =: l ["A", "B"]] ";%aa=A,B",
+        Test "{;%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] ";%aa=A,1,B,2",
+        Test "{;%aa*}" ["%aa" =: s "A"] ";%aa=A",
+        Test "{;%aa*}" ["%aa" =: l ["A", "B"]] ";%aa=A;%aa=B",
+        Test "{;%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] ";A=1;B=2",
+        Test "{?a}" [] "",
+        Test "{?a}" ["a" =: l []] "",
+        Test "{?a}" ["a" =: d []] "",
+        Test "{?a}" ["a" =: s ""] "?a=",
+        Test "{?a}" ["a" =: s "A"] "?a=A",
+        Test "{?a}" ["a" =: s "~"] "?a=~",
+        Test "{?a}" ["a" =: s "%"] "?a=%25",
+        Test "{?a}" ["a" =: s "?"] "?a=%3F",
+        Test "{?a}" ["a" =: s "&"] "?a=%26",
+        Test "{?a}" ["a" =: s "\xa0"] "?a=%C2%A0",
+        Test "{?a}" ["a" =: s "\xd7ff"] "?a=%ED%9F%BF",
+        Test "{?a}" ["a" =: s "\x10000"] "?a=%F0%90%80%80",
+        Test "{?a}" ["a" =: l ["A"]] "?a=A",
+        Test "{?a}" ["a" =: l ["A", "B"]] "?a=A,B",
+        Test "{?a}" ["a" =: l ["%"]] "?a=%25",
+        Test "{?a}" ["a" =: l ["\xa0"]] "?a=%C2%A0",
+        Test "{?a}" ["a" =: d ["A" =: "1"]] "?a=A,1",
+        Test "{?a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "?a=A,1,B,2",
+        Test "{?a}" ["a" =: d ["A" =: "%"]] "?a=A,%25",
+        Test "{?a}" ["a" =: d ["A" =: "\xa0"]] "?a=A,%C2%A0",
+        Test "{?a}" ["a" =: d ["%" =: "1"]] "?a=%25,1",
+        Test "{?a*}" [] "",
+        Test "{?a*}" ["a" =: s ""] "?a=",
+        Test "{?a*}" ["a" =: s "A"] "?a=A",
+        Test "{?a*}" ["a" =: l []] "",
+        Test "{?a*}" ["a" =: l ["A"]] "?a=A",
+        Test "{?a*}" ["a" =: l ["A", "B"]] "?a=A&a=B",
+        Test "{?a*}" ["a" =: d []] "",
+        Test "{?a*}" ["a" =: d ["A" =: "1"]] "?A=1",
+        Test "{?a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "?A=1&B=2",
+        Test "{?a:1}" [] "",
+        Test "{?a:1}" ["a" =: s ""] "?a=",
+        Test "{?a:1}" ["a" =: s "A"] "?a=A",
+        Test "{?a:1}" ["a" =: s "AB"] "?a=A",
+        Test "{?a:1}" ["a" =: s "%B"] "?a=%25",
+        Test "{?a:1}" ["a" =: s "\xa0\&B"] "?a=%C2%A0",
+        Test "{?a:1}" ["a" =: s "\xd7ff\&B"] "?a=%ED%9F%BF",
+        Test "{?a:1}" ["a" =: s "\x10000\&B"] "?a=%F0%90%80%80",
+        Test "{?a:1}" ["a" =: l []] "",
+        Test "{?a:1}" ["a" =: l ["AB"]] "?a=AB",
+        Test "{?a:1}" ["a" =: l ["AB", "CD"]] "?a=AB,CD",
+        Test "{?a:1}" ["a" =: d []] "",
+        Test "{?a:1}" ["a" =: d ["AB" =: "12"]] "?a=AB,12",
+        Test "{?a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "?a=AB,12,CD,34",
+        Test "{?a,a}" [] "",
+        Test "{?a,a}" ["a" =: l []] "",
+        Test "{?a,a}" ["a" =: d []] "",
+        Test "{?a,a}" ["a" =: s ""] "?a=&a=",
+        Test "{?a,b}" ["a" =: s ""] "?a=",
+        Test "{?a,b}" ["b" =: s ""] "?b=",
+        Test "{?%aa}" ["%aa" =: s "A"] "?%aa=A",
+        Test "{?%aa}" ["%aa" =: l ["A", "B"]] "?%aa=A,B",
+        Test "{?%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "?%aa=A,1,B,2",
+        Test "{?%aa*}" ["%aa" =: s "A"] "?%aa=A",
+        Test "{?%aa*}" ["%aa" =: l ["A", "B"]] "?%aa=A&%aa=B",
+        Test "{?%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "?A=1&B=2",
+        Test "{&a}" [] "",
+        Test "{&a}" ["a" =: l []] "",
+        Test "{&a}" ["a" =: d []] "",
+        Test "{&a}" ["a" =: s ""] "&a=",
+        Test "{&a}" ["a" =: s "A"] "&a=A",
+        Test "{&a}" ["a" =: s "~"] "&a=~",
+        Test "{&a}" ["a" =: s "%"] "&a=%25",
+        Test "{&a}" ["a" =: s "?"] "&a=%3F",
+        Test "{&a}" ["a" =: s "&"] "&a=%26",
+        Test "{&a}" ["a" =: s "\xa0"] "&a=%C2%A0",
+        Test "{&a}" ["a" =: s "\xd7ff"] "&a=%ED%9F%BF",
+        Test "{&a}" ["a" =: s "\x10000"] "&a=%F0%90%80%80",
+        Test "{&a}" ["a" =: l ["A"]] "&a=A",
+        Test "{&a}" ["a" =: l ["A", "B"]] "&a=A,B",
+        Test "{&a}" ["a" =: l ["%"]] "&a=%25",
+        Test "{&a}" ["a" =: l ["\xa0"]] "&a=%C2%A0",
+        Test "{&a}" ["a" =: d ["A" =: "1"]] "&a=A,1",
+        Test "{&a}" ["a" =: d ["A" =: "1", "B" =: "2"]] "&a=A,1,B,2",
+        Test "{&a}" ["a" =: d ["A" =: "%"]] "&a=A,%25",
+        Test "{&a}" ["a" =: d ["A" =: "\xa0"]] "&a=A,%C2%A0",
+        Test "{&a}" ["a" =: d ["%" =: "1"]] "&a=%25,1",
+        Test "{&a*}" [] "",
+        Test "{&a*}" ["a" =: s ""] "&a=",
+        Test "{&a*}" ["a" =: s "A"] "&a=A",
+        Test "{&a*}" ["a" =: l []] "",
+        Test "{&a*}" ["a" =: l ["A"]] "&a=A",
+        Test "{&a*}" ["a" =: l ["A", "B"]] "&a=A&a=B",
+        Test "{&a*}" ["a" =: d []] "",
+        Test "{&a*}" ["a" =: d ["A" =: "1"]] "&A=1",
+        Test "{&a*}" ["a" =: d ["A" =: "1", "B" =: "2"]] "&A=1&B=2",
+        Test "{&a:1}" [] "",
+        Test "{&a:1}" ["a" =: s ""] "&a=",
+        Test "{&a:1}" ["a" =: s "A"] "&a=A",
+        Test "{&a:1}" ["a" =: s "AB"] "&a=A",
+        Test "{&a:1}" ["a" =: s "%B"] "&a=%25",
+        Test "{&a:1}" ["a" =: s "\xa0\&B"] "&a=%C2%A0",
+        Test "{&a:1}" ["a" =: s "\xd7ff\&B"] "&a=%ED%9F%BF",
+        Test "{&a:1}" ["a" =: s "\x10000\&B"] "&a=%F0%90%80%80",
+        Test "{&a:1}" ["a" =: l []] "",
+        Test "{&a:1}" ["a" =: l ["AB"]] "&a=AB",
+        Test "{&a:1}" ["a" =: l ["AB", "CD"]] "&a=AB,CD",
+        Test "{&a:1}" ["a" =: d []] "",
+        Test "{&a:1}" ["a" =: d ["AB" =: "12"]] "&a=AB,12",
+        Test "{&a:1}" ["a" =: d ["AB" =: "12", "CD" =: "34"]] "&a=AB,12,CD,34",
+        Test "{&a,a}" [] "",
+        Test "{&a,a}" ["a" =: l []] "",
+        Test "{&a,a}" ["a" =: d []] "",
+        Test "{&a,a}" ["a" =: s ""] "&a=&a=",
+        Test "{&a,b}" ["a" =: s ""] "&a=",
+        Test "{&a,b}" ["b" =: s ""] "&b=",
+        Test "{&%aa}" ["%aa" =: s "A"] "&%aa=A",
+        Test "{&%aa}" ["%aa" =: l ["A", "B"]] "&%aa=A,B",
+        Test "{&%aa}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "&%aa=A,1,B,2",
+        Test "{&%aa*}" ["%aa" =: s "A"] "&%aa=A",
+        Test "{&%aa*}" ["%aa" =: l ["A", "B"]] "&%aa=A&%aa=B",
+        Test "{&%aa*}" ["%aa" =: d ["A" =: "1", "B" =: "2"]] "&A=1&B=2"
+      ],
+      let values = ["%AA" =: s "1", "%Aa" =: s "2", "%aA" =: s "3", "%aa" =: s "4"]
+       in [ Test "{%AA}" values "1",
+            Test "{%Aa}" values "2",
+            Test "{%aA}" values "3",
+            Test "{%aa}" values "4"
+            -- This comment forces Brittany to use a multi-line layout.
+          ],
+      let values = ["a" =: s "abcdefghijklmnopqrstuvwxyz"]
+       in [ Test "{a:1}" values "a",
+            Test "{a:5}" values "abcde",
+            Test "{a:10}" values "abcdefghij",
+            Test "{a:15}" values "abcdefghijklmno",
+            Test "{a:20}" values "abcdefghijklmnopqrst",
+            Test "{a:25}" values "abcdefghijklmnopqrstuvwxy",
+            Test "{a:26}" values "abcdefghijklmnopqrstuvwxyz",
+            Test "{a:30}" values "abcdefghijklmnopqrstuvwxyz"
+          ],
+      let values = ["a" =: l []]
+       in [ Test "{a}" values "",
+            Test "{+a}" values "",
+            Test "{#a}" values "",
+            Test "{.a}" values "",
+            Test "{/a}" values "",
+            Test "{;a}" values "",
+            Test "{?a}" values "",
+            Test "{&a}" values ""
+          ],
+      let values = ["a" =: d []]
+       in [ Test "{a}" values "",
+            Test "{+a}" values "",
+            Test "{#a}" values "",
+            Test "{.a}" values "",
+            Test "{/a}" values "",
+            Test "{;a}" values "",
+            Test "{?a}" values "",
+            Test "{&a}" values ""
+          ],
+      let values = ["a" =: s ""]
+       in [ Test "{a}" values "",
+            Test "{+a}" values "",
+            Test "{#a}" values "#",
+            Test "{.a}" values ".",
+            Test "{/a}" values "/",
+            Test "{;a}" values ";a",
+            Test "{?a}" values "?a=",
+            Test "{&a}" values "&a="
+          ],
+      let values = ["a" =: s "A"]
+       in [ Test "{a}" values "A",
+            Test "{+a}" values "A",
+            Test "{#a}" values "#A",
+            Test "{.a}" values ".A",
+            Test "{/a}" values "/A",
+            Test "{;a}" values ";a=A",
+            Test "{?a}" values "?a=A",
+            Test "{&a}" values "&a=A"
+          ],
+      let values = ["b" =: s "B"]
+       in [ Test "{a,b}" values "B",
+            Test "{+a,b}" values "B",
+            Test "{#a,b}" values "#B",
+            Test "{.a,b}" values ".B",
+            Test "{/a,b}" values "/B",
+            Test "{;a,b}" values ";b=B",
+            Test "{?a,b}" values "?b=B",
+            Test "{&a,b}" values "&b=B"
+          ],
+      let values = ["a" =: s ""]
+       in [ Test "{a,a}" values ",",
+            Test "{+a,a}" values ",",
+            Test "{#a,a}" values "#,",
+            Test "{.a,a}" values "..",
+            Test "{/a,a}" values "//",
+            Test "{;a,a}" values ";a;a",
+            Test "{?a,a}" values "?a=&a=",
+            Test "{&a,a}" values "&a=&a="
+          ],
+      let values = ["a" =: s "A", "b" =: s "B"]
+       in [ Test "{a,b}" values "A,B",
+            Test "{+a,b}" values "A,B",
+            Test "{#a,b}" values "#A,B",
+            Test "{.a,b}" values ".A.B",
+            Test "{/a,b}" values "/A/B",
+            Test "{;a,b}" values ";a=A;b=B",
+            Test "{?a,b}" values "?a=A&b=B",
+            Test "{&a,b}" values "&a=A&b=B"
+          ],
+      let values = ["a" =: d ["K! \xa0\xd7ff\x10000" =: "V! \xa0\xd7ff\x10000"]]
+       in [ Test "{a*}" values "K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80",
+            Test "{+a*}" values "K!%20%C2%A0%ED%9F%BF%F0%90%80%80=V!%20%C2%A0%ED%9F%BF%F0%90%80%80",
+            Test "{#a*}" values "#K!%20%C2%A0%ED%9F%BF%F0%90%80%80=V!%20%C2%A0%ED%9F%BF%F0%90%80%80",
+            Test "{.a*}" values ".K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80",
+            Test "{/a*}" values "/K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80",
+            Test "{;a*}" values ";K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80",
+            Test "{?a*}" values "?K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80",
+            Test "{&a*}" values "&K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80"
+          ],
+      let values =
+            [ "empty" =: s "",
+              "hello" =: s "Hello World!",
+              "keys" =: d ["semi" =: ";", "dot" =: ".", "comma" =: ","],
+              "list" =: l ["red", "green", "blue"],
+              "path" =: s "/foo/bar",
+              "var" =: s "value",
+              "x" =: s "1024",
+              "y" =: s "768"
+            ]
+       in [ Test "{var}" values "value",
+            Test "{hello}" values "Hello%20World%21",
+            Test "{+var}" values "value",
+            Test "{+hello}" values "Hello%20World!",
+            Test "{+path}/here" values "/foo/bar/here",
+            Test "here?ref={+path}" values "here?ref=/foo/bar",
+            Test "X{#var}" values "X#value",
+            Test "X{#hello}" values "X#Hello%20World!",
+            Test "map?{x,y}" values "map?1024,768",
+            Test "{x,hello,y}" values "1024,Hello%20World%21,768",
+            Test "{+x,hello,y}" values "1024,Hello%20World!,768",
+            Test "{+path,x}/here" values "/foo/bar,1024/here",
+            Test "{#x,hello,y}" values "#1024,Hello%20World!,768",
+            Test "{#path,x}/here" values "#/foo/bar,1024/here",
+            Test "X{.var}" values "X.value",
+            Test "X{.x,y}" values "X.1024.768",
+            Test "{/var}" values "/value",
+            Test "{/var,x}/here" values "/value/1024/here",
+            Test "{;x,y}" values ";x=1024;y=768",
+            Test "{;x,y,empty}" values ";x=1024;y=768;empty",
+            Test "{?x,y}" values "?x=1024&y=768",
+            Test "{?x,y,empty}" values "?x=1024&y=768&empty=",
+            Test "?fixed=yes{&x}" values "?fixed=yes&x=1024",
+            Test "{&x,y,empty}" values "&x=1024&y=768&empty=",
+            Test "{var:3}" values "val",
+            Test "{var:30}" values "value",
+            Test "{list}" values "red,green,blue",
+            Test "{list*}" values "red,green,blue",
+            Test "{keys}" values "comma,%2C,dot,.,semi,%3B",
+            Test "{keys*}" values "comma=%2C,dot=.,semi=%3B",
+            Test "{+path:6}/here" values "/foo/b/here",
+            Test "{+list}" values "red,green,blue",
+            Test "{+list*}" values "red,green,blue",
+            Test "{+keys}" values "comma,,,dot,.,semi,;",
+            Test "{+keys*}" values "comma=,,dot=.,semi=;",
+            Test "{#path:6}/here" values "#/foo/b/here",
+            Test "{#list}" values "#red,green,blue",
+            Test "{#list*}" values "#red,green,blue",
+            Test "{#keys}" values "#comma,,,dot,.,semi,;",
+            Test "{#keys*}" values "#comma=,,dot=.,semi=;",
+            Test "X{.var:3}" values "X.val",
+            Test "X{.list}" values "X.red,green,blue",
+            Test "X{.list*}" values "X.red.green.blue",
+            Test "X{.keys}" values "X.comma,%2C,dot,.,semi,%3B",
+            Test "X{.keys*}" values "X.comma=%2C.dot=..semi=%3B",
+            Test "{/var:1,var}" values "/v/value",
+            Test "{/list}" values "/red,green,blue",
+            Test "{/list*}" values "/red/green/blue",
+            Test "{/list*,path:4}" values "/red/green/blue/%2Ffoo",
+            Test "{/keys}" values "/comma,%2C,dot,.,semi,%3B",
+            Test "{/keys*}" values "/comma=%2C/dot=./semi=%3B",
+            Test "{;hello:5}" values ";hello=Hello",
+            Test "{;list}" values ";list=red,green,blue",
+            Test "{;list*}" values ";list=red;list=green;list=blue",
+            Test "{;keys}" values ";keys=comma,%2C,dot,.,semi,%3B",
+            Test "{;keys*}" values ";comma=%2C;dot=.;semi=%3B",
+            Test "{?var:3}" values "?var=val",
+            Test "{?list}" values "?list=red,green,blue",
+            Test "{?list*}" values "?list=red&list=green&list=blue",
+            Test "{?keys}" values "?keys=comma,%2C,dot,.,semi,%3B",
+            Test "{?keys*}" values "?comma=%2C&dot=.&semi=%3B",
+            Test "{&var:3}" values "&var=val",
+            Test "{&list}" values "&list=red,green,blue",
+            Test "{&list*}" values "&list=red&list=green&list=blue",
+            Test "{&keys}" values "&keys=comma,%2C,dot,.,semi,%3B",
+            Test "{&keys*}" values "&comma=%2C&dot=.&semi=%3B"
+          ],
+      let values = ["var" =: s "value", "semi" =: s ";"]
+       in [ Test "{var}" values "value",
+            Test "{var:20}" values "value",
+            Test "{var:3}" values "val",
+            Test "{semi}" values "%3B",
+            Test "{semi:2}" values "%3B"
+            -- This comment forces Brittany to use a multi-line layout.
+          ],
+      let values = ["year" =: l ["1965", "2000", "2012"], "dom" =: l ["example", "com"]]
+       in [ Test "find{?year*}" values "find?year=1965&year=2000&year=2012",
+            Test "www{.dom*}" values "www.example.com"
+            -- This comment forces Brittany to use a multi-line layout.
+          ],
+      let values =
+            [ "base" =: s "http://example.com/home/",
+              "count" =: l ["one", "two", "three"],
+              "dom" =: l ["example", "com"],
+              "dub" =: s "me/too",
+              "empty_keys" =: d [],
+              "empty" =: s "",
+              "half" =: s "50%",
+              "hello" =: s "Hello World!",
+              "keys" =: d ["semi" =: ";", "dot" =: ".", "comma" =: ","],
+              "list" =: l ["red", "green", "blue"],
+              "path" =: s "/foo/bar",
+              "v" =: s "6",
+              "var" =: s "value",
+              "who" =: s "fred",
+              "x" =: s "1024",
+              "y" =: s "768"
+            ]
+       in [ Test "{count}" values "one,two,three",
+            Test "{count*}" values "one,two,three",
+            Test "{/count}" values "/one,two,three",
+            Test "{/count*}" values "/one/two/three",
+            Test "{;count}" values ";count=one,two,three",
+            Test "{;count*}" values ";count=one;count=two;count=three",
+            Test "{?count}" values "?count=one,two,three",
+            Test "{?count*}" values "?count=one&count=two&count=three",
+            Test "{&count*}" values "&count=one&count=two&count=three",
+            Test "{var}" values "value",
+            Test "{hello}" values "Hello%20World%21",
+            Test "{half}" values "50%25",
+            Test "O{empty}X" values "OX",
+            Test "O{undef}X" values "OX",
+            Test "{x,y}" values "1024,768",
+            Test "{x,hello,y}" values "1024,Hello%20World%21,768",
+            Test "?{x,empty}" values "?1024,",
+            Test "?{x,undef}" values "?1024",
+            Test "?{undef,y}" values "?768",
+            Test "{var:3}" values "val",
+            Test "{var:30}" values "value",
+            Test "{list}" values "red,green,blue",
+            Test "{list*}" values "red,green,blue",
+            Test "{keys}" values "comma,%2C,dot,.,semi,%3B",
+            Test "{keys*}" values "comma=%2C,dot=.,semi=%3B",
+            Test "{+var}" values "value",
+            Test "{+hello}" values "Hello%20World!",
+            Test "{+half}" values "50%25",
+            Test "{base}index" values "http%3A%2F%2Fexample.com%2Fhome%2Findex",
+            Test "{+base}index" values "http://example.com/home/index",
+            Test "O{+empty}X" values "OX",
+            Test "O{+undef}X" values "OX",
+            Test "{+path}/here" values "/foo/bar/here",
+            Test "here?ref={+path}" values "here?ref=/foo/bar",
+            Test "up{+path}{var}/here" values "up/foo/barvalue/here",
+            Test "{+x,hello,y}" values "1024,Hello%20World!,768",
+            Test "{+path,x}/here" values "/foo/bar,1024/here",
+            Test "{+path:6}/here" values "/foo/b/here",
+            Test "{+list}" values "red,green,blue",
+            Test "{+list*}" values "red,green,blue",
+            Test "{+keys}" values "comma,,,dot,.,semi,;",
+            Test "{+keys*}" values "comma=,,dot=.,semi=;",
+            Test "{#var}" values "#value",
+            Test "{#hello}" values "#Hello%20World!",
+            Test "{#half}" values "#50%25",
+            Test "foo{#empty}" values "foo#",
+            Test "foo{#undef}" values "foo",
+            Test "{#x,hello,y}" values "#1024,Hello%20World!,768",
+            Test "{#path,x}/here" values "#/foo/bar,1024/here",
+            Test "{#path:6}/here" values "#/foo/b/here",
+            Test "{#list}" values "#red,green,blue",
+            Test "{#list*}" values "#red,green,blue",
+            Test "{#keys}" values "#comma,,,dot,.,semi,;",
+            Test "{#keys*}" values "#comma=,,dot=.,semi=;",
+            Test "{.who}" values ".fred",
+            Test "{.who,who}" values ".fred.fred",
+            Test "{.half,who}" values ".50%25.fred",
+            Test "www{.dom*}" values "www.example.com",
+            Test "X{.var}" values "X.value",
+            Test "X{.empty}" values "X.",
+            Test "X{.undef}" values "X",
+            Test "X{.var:3}" values "X.val",
+            Test "X{.list}" values "X.red,green,blue",
+            Test "X{.list*}" values "X.red.green.blue",
+            Test "X{.keys}" values "X.comma,%2C,dot,.,semi,%3B",
+            Test "X{.keys*}" values "X.comma=%2C.dot=..semi=%3B",
+            Test "X{.empty_keys}" values "X",
+            Test "X{.empty_keys*}" values "X",
+            Test "{/who}" values "/fred",
+            Test "{/who,who}" values "/fred/fred",
+            Test "{/half,who}" values "/50%25/fred",
+            Test "{/who,dub}" values "/fred/me%2Ftoo",
+            Test "{/var}" values "/value",
+            Test "{/var,empty}" values "/value/",
+            Test "{/var,undef}" values "/value",
+            Test "{/var,x}/here" values "/value/1024/here",
+            Test "{/var:1,var}" values "/v/value",
+            Test "{/list}" values "/red,green,blue",
+            Test "{/list*}" values "/red/green/blue",
+            Test "{/list*,path:4}" values "/red/green/blue/%2Ffoo",
+            Test "{/keys}" values "/comma,%2C,dot,.,semi,%3B",
+            Test "{/keys*}" values "/comma=%2C/dot=./semi=%3B",
+            Test "{;who}" values ";who=fred",
+            Test "{;half}" values ";half=50%25",
+            Test "{;empty}" values ";empty",
+            Test "{;v,empty,who}" values ";v=6;empty;who=fred",
+            Test "{;v,bar,who}" values ";v=6;who=fred",
+            Test "{;x,y}" values ";x=1024;y=768",
+            Test "{;x,y,empty}" values ";x=1024;y=768;empty",
+            Test "{;x,y,undef}" values ";x=1024;y=768",
+            Test "{;hello:5}" values ";hello=Hello",
+            Test "{;list}" values ";list=red,green,blue",
+            Test "{;list*}" values ";list=red;list=green;list=blue",
+            Test "{;keys}" values ";keys=comma,%2C,dot,.,semi,%3B",
+            Test "{;keys*}" values ";comma=%2C;dot=.;semi=%3B",
+            Test "{?who}" values "?who=fred",
+            Test "{?half}" values "?half=50%25",
+            Test "{?x,y}" values "?x=1024&y=768",
+            Test "{?x,y,empty}" values "?x=1024&y=768&empty=",
+            Test "{?x,y,undef}" values "?x=1024&y=768",
+            Test "{?var:3}" values "?var=val",
+            Test "{?list}" values "?list=red,green,blue",
+            Test "{?list*}" values "?list=red&list=green&list=blue",
+            Test "{?keys}" values "?keys=comma,%2C,dot,.,semi,%3B",
+            Test "{?keys*}" values "?comma=%2C&dot=.&semi=%3B",
+            Test "{&who}" values "&who=fred",
+            Test "{&half}" values "&half=50%25",
+            Test "?fixed=yes{&x}" values "?fixed=yes&x=1024",
+            Test "{&x,y,empty}" values "&x=1024&y=768&empty=",
+            Test "{&x,y,undef}" values "&x=1024&y=768",
+            Test "{&var:3}" values "&var=val",
+            Test "{&list}" values "&list=red,green,blue",
+            Test "{&list*}" values "&list=red&list=green&list=blue",
+            Test "{&keys}" values "&keys=comma,%2C,dot,.,semi,%3B",
+            Test "{&keys*}" values "&comma=%2C&dot=.&semi=%3B"
+          ]
     ]
-  , let values = ["%AA" =: s "1", "%Aa" =: s "2", "%aA" =: s "3", "%aa" =: s "4"]
-    in
-      [ Test "{%AA}" values "1"
-      , Test "{%Aa}" values "2"
-      , Test "{%aA}" values "3"
-      , Test "{%aa}" values "4"
-          -- This comment forces Brittany to use a multi-line layout.
-      ]
-  , let values = ["a" =: s "abcdefghijklmnopqrstuvwxyz"]
-    in
-      [ Test "{a:1}" values "a"
-      , Test "{a:5}" values "abcde"
-      , Test "{a:10}" values "abcdefghij"
-      , Test "{a:15}" values "abcdefghijklmno"
-      , Test "{a:20}" values "abcdefghijklmnopqrst"
-      , Test "{a:25}" values "abcdefghijklmnopqrstuvwxy"
-      , Test "{a:26}" values "abcdefghijklmnopqrstuvwxyz"
-      , Test "{a:30}" values "abcdefghijklmnopqrstuvwxyz"
-      ]
-  , let values = ["a" =: l []]
-    in
-      [ Test "{a}" values ""
-      , Test "{+a}" values ""
-      , Test "{#a}" values ""
-      , Test "{.a}" values ""
-      , Test "{/a}" values ""
-      , Test "{;a}" values ""
-      , Test "{?a}" values ""
-      , Test "{&a}" values ""
-      ]
-  , let values = ["a" =: d []]
-    in
-      [ Test "{a}" values ""
-      , Test "{+a}" values ""
-      , Test "{#a}" values ""
-      , Test "{.a}" values ""
-      , Test "{/a}" values ""
-      , Test "{;a}" values ""
-      , Test "{?a}" values ""
-      , Test "{&a}" values ""
-      ]
-  , let values = ["a" =: s ""]
-    in
-      [ Test "{a}" values ""
-      , Test "{+a}" values ""
-      , Test "{#a}" values "#"
-      , Test "{.a}" values "."
-      , Test "{/a}" values "/"
-      , Test "{;a}" values ";a"
-      , Test "{?a}" values "?a="
-      , Test "{&a}" values "&a="
-      ]
-  , let values = ["a" =: s "A"]
-    in
-      [ Test "{a}" values "A"
-      , Test "{+a}" values "A"
-      , Test "{#a}" values "#A"
-      , Test "{.a}" values ".A"
-      , Test "{/a}" values "/A"
-      , Test "{;a}" values ";a=A"
-      , Test "{?a}" values "?a=A"
-      , Test "{&a}" values "&a=A"
-      ]
-  , let values = ["b" =: s "B"]
-    in
-      [ Test "{a,b}" values "B"
-      , Test "{+a,b}" values "B"
-      , Test "{#a,b}" values "#B"
-      , Test "{.a,b}" values ".B"
-      , Test "{/a,b}" values "/B"
-      , Test "{;a,b}" values ";b=B"
-      , Test "{?a,b}" values "?b=B"
-      , Test "{&a,b}" values "&b=B"
-      ]
-  , let values = ["a" =: s ""]
-    in
-      [ Test "{a,a}" values ","
-      , Test "{+a,a}" values ","
-      , Test "{#a,a}" values "#,"
-      , Test "{.a,a}" values ".."
-      , Test "{/a,a}" values "//"
-      , Test "{;a,a}" values ";a;a"
-      , Test "{?a,a}" values "?a=&a="
-      , Test "{&a,a}" values "&a=&a="
-      ]
-  , let values = ["a" =: s "A", "b" =: s "B"]
-    in
-      [ Test "{a,b}" values "A,B"
-      , Test "{+a,b}" values "A,B"
-      , Test "{#a,b}" values "#A,B"
-      , Test "{.a,b}" values ".A.B"
-      , Test "{/a,b}" values "/A/B"
-      , Test "{;a,b}" values ";a=A;b=B"
-      , Test "{?a,b}" values "?a=A&b=B"
-      , Test "{&a,b}" values "&a=A&b=B"
-      ]
-  , let values = ["a" =: d ["K! \xa0\xd7ff\x10000" =: "V! \xa0\xd7ff\x10000"]]
-    in
-      [ Test "{a*}" values "K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80"
-      , Test "{+a*}" values "K!%20%C2%A0%ED%9F%BF%F0%90%80%80=V!%20%C2%A0%ED%9F%BF%F0%90%80%80"
-      , Test "{#a*}" values "#K!%20%C2%A0%ED%9F%BF%F0%90%80%80=V!%20%C2%A0%ED%9F%BF%F0%90%80%80"
-      , Test "{.a*}" values ".K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80"
-      , Test "{/a*}" values "/K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80"
-      , Test "{;a*}" values ";K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80"
-      , Test "{?a*}" values "?K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80"
-      , Test "{&a*}" values "&K%21%20%C2%A0%ED%9F%BF%F0%90%80%80=V%21%20%C2%A0%ED%9F%BF%F0%90%80%80"
-      ]
-  , let
-      values =
-        [ "empty" =: s ""
-        , "hello" =: s "Hello World!"
-        , "keys" =: d ["semi" =: ";", "dot" =: ".", "comma" =: ","]
-        , "list" =: l ["red", "green", "blue"]
-        , "path" =: s "/foo/bar"
-        , "var" =: s "value"
-        , "x" =: s "1024"
-        , "y" =: s "768"
-        ]
-    in
-      [ Test "{var}" values "value"
-      , Test "{hello}" values "Hello%20World%21"
-      , Test "{+var}" values "value"
-      , Test "{+hello}" values "Hello%20World!"
-      , Test "{+path}/here" values "/foo/bar/here"
-      , Test "here?ref={+path}" values "here?ref=/foo/bar"
-      , Test "X{#var}" values "X#value"
-      , Test "X{#hello}" values "X#Hello%20World!"
-      , Test "map?{x,y}" values "map?1024,768"
-      , Test "{x,hello,y}" values "1024,Hello%20World%21,768"
-      , Test "{+x,hello,y}" values "1024,Hello%20World!,768"
-      , Test "{+path,x}/here" values "/foo/bar,1024/here"
-      , Test "{#x,hello,y}" values "#1024,Hello%20World!,768"
-      , Test "{#path,x}/here" values "#/foo/bar,1024/here"
-      , Test "X{.var}" values "X.value"
-      , Test "X{.x,y}" values "X.1024.768"
-      , Test "{/var}" values "/value"
-      , Test "{/var,x}/here" values "/value/1024/here"
-      , Test "{;x,y}" values ";x=1024;y=768"
-      , Test "{;x,y,empty}" values ";x=1024;y=768;empty"
-      , Test "{?x,y}" values "?x=1024&y=768"
-      , Test "{?x,y,empty}" values "?x=1024&y=768&empty="
-      , Test "?fixed=yes{&x}" values "?fixed=yes&x=1024"
-      , Test "{&x,y,empty}" values "&x=1024&y=768&empty="
-      , Test "{var:3}" values "val"
-      , Test "{var:30}" values "value"
-      , Test "{list}" values "red,green,blue"
-      , Test "{list*}" values "red,green,blue"
-      , Test "{keys}" values "comma,%2C,dot,.,semi,%3B"
-      , Test "{keys*}" values "comma=%2C,dot=.,semi=%3B"
-      , Test "{+path:6}/here" values "/foo/b/here"
-      , Test "{+list}" values "red,green,blue"
-      , Test "{+list*}" values "red,green,blue"
-      , Test "{+keys}" values "comma,,,dot,.,semi,;"
-      , Test "{+keys*}" values "comma=,,dot=.,semi=;"
-      , Test "{#path:6}/here" values "#/foo/b/here"
-      , Test "{#list}" values "#red,green,blue"
-      , Test "{#list*}" values "#red,green,blue"
-      , Test "{#keys}" values "#comma,,,dot,.,semi,;"
-      , Test "{#keys*}" values "#comma=,,dot=.,semi=;"
-      , Test "X{.var:3}" values "X.val"
-      , Test "X{.list}" values "X.red,green,blue"
-      , Test "X{.list*}" values "X.red.green.blue"
-      , Test "X{.keys}" values "X.comma,%2C,dot,.,semi,%3B"
-      , Test "X{.keys*}" values "X.comma=%2C.dot=..semi=%3B"
-      , Test "{/var:1,var}" values "/v/value"
-      , Test "{/list}" values "/red,green,blue"
-      , Test "{/list*}" values "/red/green/blue"
-      , Test "{/list*,path:4}" values "/red/green/blue/%2Ffoo"
-      , Test "{/keys}" values "/comma,%2C,dot,.,semi,%3B"
-      , Test "{/keys*}" values "/comma=%2C/dot=./semi=%3B"
-      , Test "{;hello:5}" values ";hello=Hello"
-      , Test "{;list}" values ";list=red,green,blue"
-      , Test "{;list*}" values ";list=red;list=green;list=blue"
-      , Test "{;keys}" values ";keys=comma,%2C,dot,.,semi,%3B"
-      , Test "{;keys*}" values ";comma=%2C;dot=.;semi=%3B"
-      , Test "{?var:3}" values "?var=val"
-      , Test "{?list}" values "?list=red,green,blue"
-      , Test "{?list*}" values "?list=red&list=green&list=blue"
-      , Test "{?keys}" values "?keys=comma,%2C,dot,.,semi,%3B"
-      , Test "{?keys*}" values "?comma=%2C&dot=.&semi=%3B"
-      , Test "{&var:3}" values "&var=val"
-      , Test "{&list}" values "&list=red,green,blue"
-      , Test "{&list*}" values "&list=red&list=green&list=blue"
-      , Test "{&keys}" values "&keys=comma,%2C,dot,.,semi,%3B"
-      , Test "{&keys*}" values "&comma=%2C&dot=.&semi=%3B"
-      ]
-  , let values = ["var" =: s "value", "semi" =: s ";"]
-    in
-      [ Test "{var}" values "value"
-      , Test "{var:20}" values "value"
-      , Test "{var:3}" values "val"
-      , Test "{semi}" values "%3B"
-      , Test "{semi:2}" values "%3B"
-          -- This comment forces Brittany to use a multi-line layout.
-      ]
-  , let values = ["year" =: l ["1965", "2000", "2012"], "dom" =: l ["example", "com"]]
-    in
-      [ Test "find{?year*}" values "find?year=1965&year=2000&year=2012"
-      , Test "www{.dom*}" values "www.example.com"
-          -- This comment forces Brittany to use a multi-line layout.
-      ]
-  , let
-      values =
-        [ "base" =: s "http://example.com/home/"
-        , "count" =: l ["one", "two", "three"]
-        , "dom" =: l ["example", "com"]
-        , "dub" =: s "me/too"
-        , "empty_keys" =: d []
-        , "empty" =: s ""
-        , "half" =: s "50%"
-        , "hello" =: s "Hello World!"
-        , "keys" =: d ["semi" =: ";", "dot" =: ".", "comma" =: ","]
-        , "list" =: l ["red", "green", "blue"]
-        , "path" =: s "/foo/bar"
-        , "v" =: s "6"
-        , "var" =: s "value"
-        , "who" =: s "fred"
-        , "x" =: s "1024"
-        , "y" =: s "768"
-        ]
-    in
-      [ Test "{count}" values "one,two,three"
-      , Test "{count*}" values "one,two,three"
-      , Test "{/count}" values "/one,two,three"
-      , Test "{/count*}" values "/one/two/three"
-      , Test "{;count}" values ";count=one,two,three"
-      , Test "{;count*}" values ";count=one;count=two;count=three"
-      , Test "{?count}" values "?count=one,two,three"
-      , Test "{?count*}" values "?count=one&count=two&count=three"
-      , Test "{&count*}" values "&count=one&count=two&count=three"
-      , Test "{var}" values "value"
-      , Test "{hello}" values "Hello%20World%21"
-      , Test "{half}" values "50%25"
-      , Test "O{empty}X" values "OX"
-      , Test "O{undef}X" values "OX"
-      , Test "{x,y}" values "1024,768"
-      , Test "{x,hello,y}" values "1024,Hello%20World%21,768"
-      , Test "?{x,empty}" values "?1024,"
-      , Test "?{x,undef}" values "?1024"
-      , Test "?{undef,y}" values "?768"
-      , Test "{var:3}" values "val"
-      , Test "{var:30}" values "value"
-      , Test "{list}" values "red,green,blue"
-      , Test "{list*}" values "red,green,blue"
-      , Test "{keys}" values "comma,%2C,dot,.,semi,%3B"
-      , Test "{keys*}" values "comma=%2C,dot=.,semi=%3B"
-      , Test "{+var}" values "value"
-      , Test "{+hello}" values "Hello%20World!"
-      , Test "{+half}" values "50%25"
-      , Test "{base}index" values "http%3A%2F%2Fexample.com%2Fhome%2Findex"
-      , Test "{+base}index" values "http://example.com/home/index"
-      , Test "O{+empty}X" values "OX"
-      , Test "O{+undef}X" values "OX"
-      , Test "{+path}/here" values "/foo/bar/here"
-      , Test "here?ref={+path}" values "here?ref=/foo/bar"
-      , Test "up{+path}{var}/here" values "up/foo/barvalue/here"
-      , Test "{+x,hello,y}" values "1024,Hello%20World!,768"
-      , Test "{+path,x}/here" values "/foo/bar,1024/here"
-      , Test "{+path:6}/here" values "/foo/b/here"
-      , Test "{+list}" values "red,green,blue"
-      , Test "{+list*}" values "red,green,blue"
-      , Test "{+keys}" values "comma,,,dot,.,semi,;"
-      , Test "{+keys*}" values "comma=,,dot=.,semi=;"
-      , Test "{#var}" values "#value"
-      , Test "{#hello}" values "#Hello%20World!"
-      , Test "{#half}" values "#50%25"
-      , Test "foo{#empty}" values "foo#"
-      , Test "foo{#undef}" values "foo"
-      , Test "{#x,hello,y}" values "#1024,Hello%20World!,768"
-      , Test "{#path,x}/here" values "#/foo/bar,1024/here"
-      , Test "{#path:6}/here" values "#/foo/b/here"
-      , Test "{#list}" values "#red,green,blue"
-      , Test "{#list*}" values "#red,green,blue"
-      , Test "{#keys}" values "#comma,,,dot,.,semi,;"
-      , Test "{#keys*}" values "#comma=,,dot=.,semi=;"
-      , Test "{.who}" values ".fred"
-      , Test "{.who,who}" values ".fred.fred"
-      , Test "{.half,who}" values ".50%25.fred"
-      , Test "www{.dom*}" values "www.example.com"
-      , Test "X{.var}" values "X.value"
-      , Test "X{.empty}" values "X."
-      , Test "X{.undef}" values "X"
-      , Test "X{.var:3}" values "X.val"
-      , Test "X{.list}" values "X.red,green,blue"
-      , Test "X{.list*}" values "X.red.green.blue"
-      , Test "X{.keys}" values "X.comma,%2C,dot,.,semi,%3B"
-      , Test "X{.keys*}" values "X.comma=%2C.dot=..semi=%3B"
-      , Test "X{.empty_keys}" values "X"
-      , Test "X{.empty_keys*}" values "X"
-      , Test "{/who}" values "/fred"
-      , Test "{/who,who}" values "/fred/fred"
-      , Test "{/half,who}" values "/50%25/fred"
-      , Test "{/who,dub}" values "/fred/me%2Ftoo"
-      , Test "{/var}" values "/value"
-      , Test "{/var,empty}" values "/value/"
-      , Test "{/var,undef}" values "/value"
-      , Test "{/var,x}/here" values "/value/1024/here"
-      , Test "{/var:1,var}" values "/v/value"
-      , Test "{/list}" values "/red,green,blue"
-      , Test "{/list*}" values "/red/green/blue"
-      , Test "{/list*,path:4}" values "/red/green/blue/%2Ffoo"
-      , Test "{/keys}" values "/comma,%2C,dot,.,semi,%3B"
-      , Test "{/keys*}" values "/comma=%2C/dot=./semi=%3B"
-      , Test "{;who}" values ";who=fred"
-      , Test "{;half}" values ";half=50%25"
-      , Test "{;empty}" values ";empty"
-      , Test "{;v,empty,who}" values ";v=6;empty;who=fred"
-      , Test "{;v,bar,who}" values ";v=6;who=fred"
-      , Test "{;x,y}" values ";x=1024;y=768"
-      , Test "{;x,y,empty}" values ";x=1024;y=768;empty"
-      , Test "{;x,y,undef}" values ";x=1024;y=768"
-      , Test "{;hello:5}" values ";hello=Hello"
-      , Test "{;list}" values ";list=red,green,blue"
-      , Test "{;list*}" values ";list=red;list=green;list=blue"
-      , Test "{;keys}" values ";keys=comma,%2C,dot,.,semi,%3B"
-      , Test "{;keys*}" values ";comma=%2C;dot=.;semi=%3B"
-      , Test "{?who}" values "?who=fred"
-      , Test "{?half}" values "?half=50%25"
-      , Test "{?x,y}" values "?x=1024&y=768"
-      , Test "{?x,y,empty}" values "?x=1024&y=768&empty="
-      , Test "{?x,y,undef}" values "?x=1024&y=768"
-      , Test "{?var:3}" values "?var=val"
-      , Test "{?list}" values "?list=red,green,blue"
-      , Test "{?list*}" values "?list=red&list=green&list=blue"
-      , Test "{?keys}" values "?keys=comma,%2C,dot,.,semi,%3B"
-      , Test "{?keys*}" values "?comma=%2C&dot=.&semi=%3B"
-      , Test "{&who}" values "&who=fred"
-      , Test "{&half}" values "&half=50%25"
-      , Test "?fixed=yes{&x}" values "?fixed=yes&x=1024"
-      , Test "{&x,y,empty}" values "&x=1024&y=768&empty="
-      , Test "{&x,y,undef}" values "&x=1024&y=768"
-      , Test "{&var:3}" values "&var=val"
-      , Test "{&list}" values "&list=red,green,blue"
-      , Test "{&list*}" values "&list=red&list=green&list=blue"
-      , Test "{&keys}" values "&keys=comma,%2C,dot,.,semi,%3B"
-      , Test "{&keys*}" values "&comma=%2C&dot=.&semi=%3B"
-      ]
-  ]
 
 data Test = Test
-  { testInput :: String
-  , testValues :: [(String, Burrito.Value)]
-  , testOutput :: Output
+  { testInput :: String,
+    testValues :: [(String, Burrito.Value)],
+    testOutput :: Output
   }
   deriving (Eq, Show)
 
@@ -1164,14 +1148,12 @@ runTest test =
     (Nothing, Just _) -> Hspec.expectationFailure "should have parsed"
     (Just _, Nothing) -> Hspec.expectationFailure "should not have parsed"
     (Just template, Just expected) -> do
-      let
-        values = testValues test
-        actual = Burrito.expand values template
+      let values = testValues test
+          actual = Burrito.expand values template
       actual `Hspec.shouldBe` expected
       Burrito.parse (show template) `Hspec.shouldBe` Just template
-      let
-        relevant =
-          List.sort $ keepRelevant (templateVariables template) values
+      let relevant =
+            List.sort $ keepRelevant (templateVariables template) values
       Monad.when (isMatchable template relevant) $ do
         let matches = List.sort <$> Burrito.match expected template
         matches `Hspec.shouldSatisfy` elem relevant
@@ -1191,50 +1173,49 @@ isAsterisk modifier = case modifier of
   Modifier.Asterisk -> True
   _ -> False
 
-keepRelevant
-  :: Set.Set Variable.Variable
-  -> [(String, Burrito.Value)]
-  -> [(String, Burrito.Value)]
+keepRelevant ::
+  Set.Set Variable.Variable ->
+  [(String, Burrito.Value)] ->
+  [(String, Burrito.Value)]
 keepRelevant variables =
-  let
-    vs =
-      Map.fromListWith
-          (\mx my -> case (mx, my) of
-            (Just x, Just y) -> Just $ max x y
-            _ -> Nothing
+  let vs =
+        Map.fromListWith
+          ( \mx my -> case (mx, my) of
+              (Just x, Just y) -> Just $ max x y
+              _ -> Nothing
           )
-        . fmap
-            (\v ->
-              ( Render.builderToString . Render.name $ Variable.name v
-              , case Variable.modifier v of
-                Modifier.Colon n -> Just $ MaxLength.count n
-                _ -> Nothing
-              )
+          . fmap
+            ( \v ->
+                ( Render.builderToString . Render.name $ Variable.name v,
+                  case Variable.modifier v of
+                    Modifier.Colon n -> Just $ MaxLength.count n
+                    _ -> Nothing
+                )
             )
-        $ Set.toList variables
-  in
-    Maybe.mapMaybe $ \(k, v) -> do
-      m <- Map.lookup k vs
-      pure . (,) k $ case m of
-        Nothing -> v
-        Just n -> case v of
-          Value.String t -> Value.String $ Text.take n t
-          _ -> v
+          $ Set.toList variables
+   in Maybe.mapMaybe $ \(k, v) -> do
+        m <- Map.lookup k vs
+        pure . (,) k $ case m of
+          Nothing -> v
+          Just n -> case v of
+            Value.String t -> Value.String $ Text.take n t
+            _ -> v
 
 templateVariables :: Template.Template -> Set.Set Variable.Variable
 templateVariables =
   Set.fromList
     . concatMap
-        (\token -> case token of
+      ( \token -> case token of
           Token.Expression expression ->
             NonEmpty.toList $ Expression.variables expression
           Token.Literal _ -> []
-        )
+      )
     . Template.tokens
 
 newtype Output = Output
   { unwrapOutput :: Maybe String
-  } deriving (Eq, Show)
+  }
+  deriving (Eq, Show)
 
 instance String.IsString Output where
   fromString = Output . Just
@@ -1256,7 +1237,8 @@ d = Burrito.dictionaryValue
 
 newtype Template = Template
   { unwrapTemplate :: Template.Template
-  } deriving (Eq)
+  }
+  deriving (Eq)
 
 instance Show Template where
   show (Template template) =
@@ -1290,10 +1272,11 @@ appendLiteral x y =
   Literal.Literal $ Literal.characters x <> Literal.characters y
 
 arbitraryToken :: QC.Gen Token.Token
-arbitraryToken = QC.oneof
-  [ Token.Expression <$> arbitraryExpression
-  , Token.Literal <$> arbitraryLiteral
-  ]
+arbitraryToken =
+  QC.oneof
+    [ Token.Expression <$> arbitraryExpression,
+      Token.Literal <$> arbitraryLiteral
+    ]
 
 shrinkToken :: Shrink Token.Token
 shrinkToken x = case x of
@@ -1307,22 +1290,25 @@ arbitraryExpression =
     <*> arbitraryNonEmpty arbitraryVariable
 
 shrinkExpression :: Shrink Expression.Expression
-shrinkExpression x = uncurry Expression.Expression <$> shrinkTuple
-  shrinkOperator
-  (shrinkNonEmpty shrinkVariable)
-  (Expression.operator x, Expression.variables x)
+shrinkExpression x =
+  uncurry Expression.Expression
+    <$> shrinkTuple
+      shrinkOperator
+      (shrinkNonEmpty shrinkVariable)
+      (Expression.operator x, Expression.variables x)
 
 arbitraryOperator :: QC.Gen Operator.Operator
-arbitraryOperator = QC.elements
-  [ Operator.Ampersand
-  , Operator.FullStop
-  , Operator.None
-  , Operator.NumberSign
-  , Operator.PlusSign
-  , Operator.QuestionMark
-  , Operator.Semicolon
-  , Operator.Solidus
-  ]
+arbitraryOperator =
+  QC.elements
+    [ Operator.Ampersand,
+      Operator.FullStop,
+      Operator.None,
+      Operator.NumberSign,
+      Operator.PlusSign,
+      Operator.QuestionMark,
+      Operator.Semicolon,
+      Operator.Solidus
+    ]
 
 shrinkOperator :: Shrink Operator.Operator
 shrinkOperator x = case x of
@@ -1333,17 +1319,20 @@ arbitraryNonEmpty :: QC.Gen a -> QC.Gen (NonEmpty.NonEmpty a)
 arbitraryNonEmpty g = (NonEmpty.:|) <$> g <*> QC.listOf g
 
 shrinkNonEmpty :: Shrink a -> Shrink (NonEmpty.NonEmpty a)
-shrinkNonEmpty f x = uncurry (NonEmpty.:|)
-  <$> shrinkTuple f (QC.shrinkList f) (NonEmpty.head x, NonEmpty.tail x)
+shrinkNonEmpty f x =
+  uncurry (NonEmpty.:|)
+    <$> shrinkTuple f (QC.shrinkList f) (NonEmpty.head x, NonEmpty.tail x)
 
 arbitraryVariable :: QC.Gen Variable.Variable
 arbitraryVariable = Variable.Variable <$> arbitraryName <*> arbitraryModifier
 
 shrinkVariable :: Shrink Variable.Variable
-shrinkVariable variable = uncurry Variable.Variable <$> shrinkTuple
-  shrinkName
-  shrinkModifier
-  (Variable.name variable, Variable.modifier variable)
+shrinkVariable variable =
+  uncurry Variable.Variable
+    <$> shrinkTuple
+      shrinkName
+      shrinkModifier
+      (Variable.name variable, Variable.modifier variable)
 
 shrinkTuple :: Shrink a -> Shrink b -> Shrink (a, b)
 shrinkTuple f g (x, y) =
@@ -1363,10 +1352,11 @@ shrinkField =
   fmap Field.Field . shrinkNonEmpty shrinkFieldCharacter . Field.characters
 
 arbitraryFieldCharacter :: QC.Gen (Character.Character Field.Field)
-arbitraryFieldCharacter = QC.oneof
-  [ Character.Encoded <$> arbitraryDigit <*> arbitraryDigit
-  , Character.Unencoded <$> QC.suchThat QC.arbitrary Parse.isFieldCharacter
-  ]
+arbitraryFieldCharacter =
+  QC.oneof
+    [ Character.Encoded <$> arbitraryDigit <*> arbitraryDigit,
+      Character.Unencoded <$> QC.suchThat QC.arbitrary Parse.isFieldCharacter
+    ]
 
 shrinkFieldCharacter :: Shrink (Character.Character Field.Field)
 shrinkFieldCharacter x = case x of
@@ -1376,24 +1366,25 @@ shrinkFieldCharacter x = case x of
     fmap Character.Unencoded . filter Parse.isFieldCharacter $ QC.shrink y
 
 arbitraryDigit :: QC.Gen Digit.Digit
-arbitraryDigit = QC.oneof
-  [ pure Digit.Ox0
-  , pure Digit.Ox1
-  , pure Digit.Ox2
-  , pure Digit.Ox3
-  , pure Digit.Ox4
-  , pure Digit.Ox5
-  , pure Digit.Ox6
-  , pure Digit.Ox7
-  , pure Digit.Ox8
-  , pure Digit.Ox9
-  , Digit.OxA <$> arbitraryCase
-  , Digit.OxB <$> arbitraryCase
-  , Digit.OxC <$> arbitraryCase
-  , Digit.OxD <$> arbitraryCase
-  , Digit.OxE <$> arbitraryCase
-  , Digit.OxF <$> arbitraryCase
-  ]
+arbitraryDigit =
+  QC.oneof
+    [ pure Digit.Ox0,
+      pure Digit.Ox1,
+      pure Digit.Ox2,
+      pure Digit.Ox3,
+      pure Digit.Ox4,
+      pure Digit.Ox5,
+      pure Digit.Ox6,
+      pure Digit.Ox7,
+      pure Digit.Ox8,
+      pure Digit.Ox9,
+      Digit.OxA <$> arbitraryCase,
+      Digit.OxB <$> arbitraryCase,
+      Digit.OxC <$> arbitraryCase,
+      Digit.OxD <$> arbitraryCase,
+      Digit.OxE <$> arbitraryCase,
+      Digit.OxF <$> arbitraryCase
+    ]
 
 shrinkDigit :: Shrink Digit.Digit
 shrinkDigit x = case x of
@@ -1423,11 +1414,12 @@ shrinkCase x = case x of
   Case.Upper -> [Case.Lower]
 
 arbitraryModifier :: QC.Gen Modifier.Modifier
-arbitraryModifier = QC.oneof
-  [ pure Modifier.Asterisk
-  , Modifier.Colon <$> arbitraryMaxLength
-  , pure Modifier.None
-  ]
+arbitraryModifier =
+  QC.oneof
+    [ pure Modifier.Asterisk,
+      Modifier.Colon <$> arbitraryMaxLength,
+      pure Modifier.None
+    ]
 
 shrinkModifier :: Shrink Modifier.Modifier
 shrinkModifier x = case x of
@@ -1457,10 +1449,11 @@ shrinkLiteral =
     . Literal.characters
 
 arbitraryLiteralCharacter :: QC.Gen (Character.Character Literal.Literal)
-arbitraryLiteralCharacter = QC.oneof
-  [ Character.Encoded <$> arbitraryDigit <*> arbitraryDigit
-  , Character.Unencoded <$> QC.suchThat QC.arbitrary Parse.isLiteralCharacter
-  ]
+arbitraryLiteralCharacter =
+  QC.oneof
+    [ Character.Encoded <$> arbitraryDigit <*> arbitraryDigit,
+      Character.Unencoded <$> QC.suchThat QC.arbitrary Parse.isLiteralCharacter
+    ]
 
 shrinkLiteralCharacter :: Shrink (Character.Character Literal.Literal)
 shrinkLiteralCharacter x = case x of

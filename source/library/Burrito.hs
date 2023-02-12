@@ -27,19 +27,20 @@
 --
 -- In short, use @parse@ to parse templates and @expand@ to render them.
 module Burrito
-  ( Parse.parse
-  , Template.render
-  , Expand.expand
-  , Expand.expandWith
-  , Match.match
-  , TH.uriTemplate
-  , TH.expandTH
-  , Template.Template
-  , Value.Value
-  , stringValue
-  , listValue
-  , dictionaryValue
-  ) where
+  ( Parse.parse,
+    Template.render,
+    Expand.expand,
+    Expand.expandWith,
+    Match.match,
+    TH.uriTemplate,
+    TH.expandTH,
+    Template.Template,
+    Value.Value,
+    stringValue,
+    listValue,
+    dictionaryValue,
+  )
+where
 
 import qualified Burrito.Internal.Expand as Expand
 import qualified Burrito.Internal.Match as Match

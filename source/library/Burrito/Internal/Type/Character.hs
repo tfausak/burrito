@@ -1,8 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Burrito.Internal.Type.Character
-  ( Character(..)
-  ) where
+  ( Character (..),
+  )
+where
 
 import qualified Burrito.Internal.Type.Digit as Digit
 import qualified Data.Data as Data

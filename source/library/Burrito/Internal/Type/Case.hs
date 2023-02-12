@@ -1,8 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Burrito.Internal.Type.Case
-  ( Case(..)
-  ) where
+  ( Case (..),
+  )
+where
 
 import qualified Data.Data as Data
 
