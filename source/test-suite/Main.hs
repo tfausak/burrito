@@ -56,7 +56,7 @@ main = Hspec.hspec . Hspec.describe "Burrito" $ do
           matches `Hspec.shouldSatisfy` elem values
           Monad.forM_ matches $ \match -> do
             let it = Burrito.expand match template
-            Monad.when (it /= output) . fail $
+            Monad.when (it /= output) . Hspec.expectationFailure $
               show
                 (input, values, output, matches, match, it)
 
