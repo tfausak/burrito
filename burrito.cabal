@@ -1,7 +1,7 @@
 cabal-version: 2.2
 
 name: burrito
-version: 2.0.1.7
+version: 2.0.1.8
 
 synopsis: Parse and render URI templates.
 description:
