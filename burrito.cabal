@@ -1,8 +1,6 @@
 cabal-version: 2.2
-
 name: burrito
 version: 2.0.1.8
-
 synopsis: Parse and render URI templates.
 description:
   Burrito is a Haskell library for parsing and rendering URI templates.
@@ -23,7 +21,10 @@ description:
 
 build-type: Simple
 category: Network
-extra-source-files: CHANGELOG.markdown README.markdown
+extra-source-files:
+  CHANGELOG.markdown
+  README.markdown
+
 license-file: LICENSE.markdown
 license: MIT
 maintainer: Taylor Fausak
@@ -39,13 +40,14 @@ flag pedantic
 
 common library
   build-depends:
-    , base >= 4.16.0 && < 4.20
-    , bytestring >= 0.11.3 && < 0.13
-    , containers >= 0.6.5 && < 0.7
-    , parsec >= 3.1.15 && < 3.2
-    , template-haskell >= 2.18.0 && < 2.22
-    , text >= 1.2.5 && < 1.3 || >= 2.0 && < 2.2
-    , transformers >= 0.5.6 && < 0.7
+    base >=4.16.0 && <4.20,
+    bytestring >=0.11.3 && <0.13,
+    containers >=0.6.5 && <0.7,
+    parsec >=3.1.15 && <3.2,
+    template-haskell >=2.18.0 && <2.22,
+    text >=1.2.5 && <1.3 || >=2.0 && <2.2,
+    transformers >=0.5.6 && <0.7,
+
   default-language: Haskell2010
   ghc-options:
     -Weverything
@@ -68,7 +70,6 @@ common library
 
 common executable
   import: library
-
   build-depends: burrito
   ghc-options:
     -rtsopts
@@ -77,7 +78,6 @@ common executable
 
 library
   import: library
-
   exposed-modules:
     Burrito
     Burrito.Internal.Expand
@@ -100,14 +100,15 @@ library
     Burrito.Internal.Type.Token
     Burrito.Internal.Type.Value
     Burrito.Internal.Type.Variable
+
   hs-source-dirs: source/library
 
 test-suite burrito-test-suite
   import: executable
-
   build-depends:
-    , hspec >= 2.9.7 && < 2.12
-    , QuickCheck >= 2.13.2 && < 2.15
+    QuickCheck >=2.13.2 && <2.16,
+    hspec >=2.9.7 && <2.12,
+
   hs-source-dirs: source/test-suite
   main-is: Main.hs
   type: exitcode-stdio-1.0

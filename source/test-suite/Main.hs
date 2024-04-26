@@ -1,3 +1,4 @@
+{- hlint ignore "Redundant bracket" -}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-monomorphism-restriction #-}
