@@ -22,8 +22,8 @@ description:
 build-type: Simple
 category: Network
 extra-doc-files:
-  CHANGELOG.markdown
-  README.markdown
+  CHANGELOG.md
+  README.md
 
 license-file: LICENSE.txt
 license: MIT
