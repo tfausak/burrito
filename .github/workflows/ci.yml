@@ -1,7 +1,7 @@
 jobs:
   build:
-    name: GHC ${{ matrix.ghc }} on ${{ matrix.platform }} ${{ matrix.version }}
-    runs-on: ${{ matrix.platform }}-${{ matrix.version }}
+    name: GHC ${{ matrix.ghc }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - run: mkdir artifact
@@ -9,8 +9,9 @@ jobs:
         uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc }}
+      - run: ghc-pkg list
       - run: cabal sdist --output-dir artifact
-      - run: cabal configure --enable-optimization=2 --enable-tests --flags pedantic --jobs
+      - run: cabal configure --enable-tests --flags=pedantic --jobs
       - run: cat cabal.project.local
       - run: cp cabal.project.local artifact
       - run: cabal freeze
@@ -19,39 +20,33 @@ jobs:
       - run: cabal outdated --v2-freeze-file
       - uses: actions/cache@v4
         with:
-          key: ${{ matrix.platform }}-${{ matrix.version }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+          key: ${{ matrix.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
           path: ${{ steps.haskell.outputs.cabal-store }}
-          restore-keys: ${{ matrix.platform }}-${{ matrix.version }}-${{ matrix.ghc }}-
+          restore-keys: ${{ matrix.os }}-${{ matrix.ghc }}-
       - run: cabal build --only-download
       - run: cabal build --only-dependencies
       - run: cabal build
       - run: tar --create --file artifact.tar --verbose artifact
       - uses: actions/upload-artifact@v4
         with:
-          name: burrito-${{ github.sha }}-ghc-${{ matrix.ghc }}-${{ matrix.platform }}-${{ matrix.version }}
+          name: burrito-${{ github.sha }}-${{ matrix.os }}-${{ matrix.ghc }}
           path: artifact.tar
       - run: cabal run -- burrito-test-suite --randomize --strict
     strategy:
       matrix:
         include:
-          - ghc: 9.8
-            platform: macos
-            version: 13
-          - ghc: 9.8
-            platform: macos
-            version: 14
-          - ghc: 9.4
-            platform: ubuntu
-            version: 22.04
+          - ghc: '9.10'
+            os: macos-13
+          - ghc: '9.10'
+            os: macos-14
           - ghc: 9.6
-            platform: ubuntu
-            version: 22.04
+            os: ubuntu-22.04
           - ghc: 9.8
-            platform: ubuntu
-            version: 22.04
-          - ghc: 9.8
-            platform: windows
-            version: 2022
+            os: ubuntu-22.04
+          - ghc: '9.10'
+            os: ubuntu-22.04
+          - ghc: '9.10'
+            os: windows-2022
   cabal:
     name: Cabal
     runs-on: ubuntu-latest
@@ -70,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: haskell-actions/hlint-setup@v2
+      - uses: haskell-actions/hlint-setup@9e09cc3653fc13702000a35f638a27b064adfbbe
       - uses: haskell-actions/hlint-run@v2
         with:
           fail-on: status
@@ -81,22 +76,29 @@ jobs:
       - uses: actions/checkout@v4
       - uses: haskell-actions/run-ormolu@v15
   release:
-    if: github.event_name == 'release'
+    if: ${{ github.event_name == 'release' }}
     name: Release
     needs: build
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: burrito-${{ github.sha }}-ghc-9.8-ubuntu-22.04
+          name: burrito-${{ github.sha }}-ubuntu-22.04-9.10
       - run: tar --extract --file artifact.tar --verbose
       - uses: softprops/action-gh-release@v2
         with:
           files: artifact/burrito-${{ github.event.release.tag_name }}.tar.gz
       - run: cabal upload --publish --username '${{ secrets.HACKAGE_USERNAME }}' --password '${{ secrets.HACKAGE_PASSWORD }}' artifact/burrito-${{ github.event.release.tag_name }}.tar.gz
-name: Workflow
+name: CI
 on:
-  push: null
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
   release:
     types:
       - created
