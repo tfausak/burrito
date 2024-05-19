@@ -35,7 +35,6 @@ source-repository head
 
 flag pedantic
   default: False
-  description: Enables @-Werror@, which turns warnings into errors.
   manual: True
 
 common library
@@ -77,6 +76,7 @@ library
     text ^>=2.0.2 || ^>=2.1,
     transformers ^>=0.6.1.0,
 
+  -- cabal-gild: discover source/library
   exposed-modules:
     Burrito
     Burrito.Internal.Expand
