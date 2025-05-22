@@ -1,6 +1,6 @@
 cabal-version: 2.2
 name: burrito
-version: 2.0.1.12
+version: 2.0.1.13
 synopsis: Parse and render URI templates.
 description:
   Burrito is a Haskell library for parsing and rendering URI templates.
