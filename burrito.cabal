@@ -103,7 +103,7 @@ library
 test-suite burrito-test-suite
   import: executable
   build-depends:
-    QuickCheck ^>=2.14.3 || ^>=2.15,
+    QuickCheck ^>=2.14.3 || ^>=2.15 || ^>=2.16,
     containers,
     hspec ^>=2.11.8,
     text,
