@@ -33,7 +33,7 @@ jobs:
         with:
           name: burrito-${{ github.sha }}-${{ matrix.os }}-${{ matrix.ghc }}
           path: artifact.tar
-      - run: cabal run -- burrito-test-suite --randomize --strict
+      - run: cabal run burrito-test-suite -- --randomize --strict
     strategy:
       matrix:
         include:
