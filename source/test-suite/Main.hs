@@ -254,7 +254,11 @@ tests =
         Test "%30" [] "%30",
         Test " " [] noParse,
         Test "\"" [] noParse,
-        Test "'" [] noParse,
+        -- RFC 6570 Erratum 6937 allows apostrophes in literals.
+        Test "'" [] "'",
+        Test "'{var}'" ["var" =: s "value"] "'value'",
+        Test "'{count}'" ["count" =: l ["one", "two", "three"]] "'one,two,three'",
+        Test "'{+var}'" ["var" =: s "value"] "'value'",
         Test "%" [] noParse,
         Test "<" [] noParse,
         Test ">" [] noParse,

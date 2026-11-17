@@ -145,7 +145,6 @@ isLiteralCharacter :: Char -> Bool
 isLiteralCharacter x = case x of
   ' ' -> False
   '"' -> False
-  '\'' -> False
   '%' -> False
   '<' -> False
   '>' -> False
