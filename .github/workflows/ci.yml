@@ -38,15 +38,15 @@ jobs:
       matrix:
         include:
           - ghc: 9.12
-            os: macos-14
+            os: macos-latest
           - ghc: '9.10'
-            os: ubuntu-24.04
+            os: ubuntu-latest
           - ghc: 9.12
-            os: ubuntu-24.04
+            os: ubuntu-latest
           - ghc: 9.14
-            os: ubuntu-24.04
+            os: ubuntu-latest
           - ghc: 9.12
-            os: windows-2022
+            os: windows-latest
   cabal:
     name: Cabal
     runs-on: ubuntu-latest
@@ -86,7 +86,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
-          name: burrito-${{ github.sha }}-ubuntu-24.04-9.12
+          name: burrito-${{ github.sha }}-ubuntu-latest-9.12
       - run: tar --extract --file artifact.tar --verbose
       - uses: softprops/action-gh-release@v3
         with:
